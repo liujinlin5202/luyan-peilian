@@ -54,6 +54,14 @@ html {
   outline-offset: 2px;
 }
 
+/* ===== 全站方框/卡片圆角（参考 Stepper 卡片风：外卡 24 / 中卡 16 / 方框 12） =====
+   只命中带四边框（.border）的盒子；分隔线（border-t/b/l）与已有 rounded-* 不受影响 */
+@layer base {
+  .border {
+    border-radius: 12px;
+  }
+}
+
 /* 列表卡片悬停：轻微上浮 + 投影 */
 .card-hover {
   transition:
@@ -73,8 +81,10 @@ html {
     width: 0;
   }
 }
-.bar-fill {
-  animation: grow-bar 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+@media (prefers-reduced-motion: no-preference) {
+  .bar-fill {
+    animation: grow-bar 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 @keyframes fade-up {
@@ -87,8 +97,10 @@ html {
     transform: none;
   }
 }
-.fade-up {
-  animation: fade-up 0.35s ease both;
+@media (prefers-reduced-motion: no-preference) {
+  .fade-up {
+    animation: fade-up 0.35s ease both;
+  }
 }
 
 @keyframes blink-dot {
@@ -101,14 +113,16 @@ html {
     opacity: 1;
   }
 }
-.thinking-dot {
-  animation: blink-dot 1.2s infinite;
-}
-.thinking-dot:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.thinking-dot:nth-child(3) {
-  animation-delay: 0.4s;
+@media (prefers-reduced-motion: no-preference) {
+  .thinking-dot {
+    animation: blink-dot 1.2s infinite;
+  }
+  .thinking-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .thinking-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
 }
 
 /* 细节纹理：纸面横线，避免大面积纯色的廉价感 */
@@ -236,8 +250,10 @@ html {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.fade-in {
-  animation: fade-in 0.25s ease-out both;
+@media (prefers-reduced-motion: no-preference) {
+  .fade-in {
+    animation: fade-in 0.25s ease-out both;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .dot-jump {

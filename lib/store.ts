@@ -19,7 +19,14 @@ function read<T>(key: string): T[] {
 }
 
 function write<T>(key: string, rows: T[]) {
-  window.localStorage.setItem(key, JSON.stringify(rows));
+  // BP 全文入库可能触发 QuotaExceededError：捕获后返回 false，调用方数据不丢内存态，页面不崩
+  try {
+    window.localStorage.setItem(key, JSON.stringify(rows));
+    return true;
+  } catch {
+    console.warn(`[store] 写入失败（可能是存储配额已满）: ${key}`);
+    return false;
+  }
 }
 
 export function uid(prefix: string): string {

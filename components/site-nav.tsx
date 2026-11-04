@@ -20,7 +20,7 @@ export function SiteNav() {
       value={active?.value ?? ""}
       onChange={(v) => router.push(v)}
       ariaLabel="主导航"
-      size="sm"
+      size="md"
       gap={6}
       radius={14}
       chipColor="rgba(22,22,19,0.06)"

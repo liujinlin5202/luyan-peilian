@@ -24,9 +24,14 @@ if [ ! -f .env.local ] || ! grep -q "^DEEPSEEK_API_KEY=sk" .env.local; then
 fi
 
 # 2. 安装依赖 + 构建
-echo "[1/2] 安装依赖…"
-npm install --no-audit --no-fund
-echo "[2/2] 构建…"
+echo "[1/3] 安装依赖…"
+if [ -f package-lock.json ]; then
+  # 优先 npm ci（按 lockfile 精确安装，避免服务器上依赖漂移）；失败再退回 npm install
+  npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+else
+  npm install --no-audit --no-fund
+fi
+echo "[2/3] 构建…"
 npm run build
 
 # 3. 启动（有 pm2 用 pm2，否则 nohup）
@@ -38,8 +43,21 @@ if command -v pm2 >/dev/null 2>&1; then
 else
   echo "[i] 未安装 pm2，使用 nohup 启动（服务器重启后需重新执行本脚本；建议 npm i -g pm2）"
   PORT=$PORT nohup npm start > app.log 2>&1 &
-  sleep 3
 fi
+
+# 4. 健康检查：20 秒内等本机响应，失败直接打印日志退出（避免「宣布部署完成」实际起不来）
+echo "[3/3] 健康检查…"
+ok=""
+for i in $(seq 1 20); do
+  if curl -sf -o /dev/null "http://127.0.0.1:${PORT}"; then ok=1; break; fi
+  sleep 1
+done
+if [ -z "$ok" ]; then
+  echo "[×] 服务 20 秒内无响应，部署失败。最近日志："
+  tail -n 30 app.log 2>/dev/null || true
+  exit 1
+fi
+echo "[✓] 服务响应正常"
 
 echo ""
 echo "=========================================="

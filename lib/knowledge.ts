@@ -176,7 +176,7 @@ export const PERSONAS: Record<Persona, { label: string; brief: string }> = {
 export const MODES = {
   normal: {
     label: "普通模式",
-    rule: "共 8-12 题，每题最多追问 1 层，语气专业克制。评分基准宽一些，以帮用户建立信心为主。",
+    rule: "共约 8-9 题，每题最多追问 1 层，语气专业克制。评分基准宽一些，以帮用户建立信心为主。",
   },
   hell: {
     label: "地狱模式",

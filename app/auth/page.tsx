@@ -64,7 +64,7 @@ export default function AuthPage() {
         </div>
       ) : null}
 
-      <form onSubmit={submit} className="space-y-5 bg-card border border-line p-6 lg:p-8">
+      <form onSubmit={submit} className="space-y-5 bg-card border border-line rounded-3xl p-6 lg:p-8">
         {mode === "signup" && (
           <label className="block">
             <span className="text-sm font-medium block mb-1.5">昵称（可选）</span>
@@ -106,7 +106,7 @@ export default function AuthPage() {
         <button
           type="submit"
           disabled={busy || !isConfigured}
-          className="w-full bg-pine text-paper font-bold text-lg py-3.5 hover:bg-pinedeep transition-colors disabled:opacity-60"
+          className="w-full bg-pine text-paper font-bold text-lg py-3.5 rounded-xl hover:bg-pinedeep transition-colors disabled:opacity-60"
         >
           {busy ? "处理中…" : mode === "signin" ? "登录" : "注册并进入训练档案"}
         </button>

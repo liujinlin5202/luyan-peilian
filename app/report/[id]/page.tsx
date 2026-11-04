@@ -77,11 +77,11 @@ export default function ReportPage() {
       <div className="grid lg:grid-cols-[2fr_3fr] gap-10">
         {/* 左：总分 + 五维 */}
         <section>
-          <div className="bg-card border border-line border-t-2 border-t-copper p-8 mb-6">
+          <div className="bg-card border border-line border-t-2 border-t-copper rounded-3xl p-8 mb-6">
             <ScoreRing score={d.overall_score} label="综合评分" />
             <p className="text-xs text-muted text-center mt-1">满分 100 · 按赛事权重折算</p>
           </div>
-          <div className="bg-card border border-line p-6">
+          <div className="bg-card border border-line rounded-3xl p-6">
             <h2 className="font-serif font-bold text-lg mb-5">五维评分</h2>
             <div className="flex justify-center mb-6">
               <RadarChart dims={d.dimensions} />
@@ -94,7 +94,7 @@ export default function ReportPage() {
         <section className="space-y-8">
           <div>
             <h2 className="font-serif font-bold text-lg mb-4 flex items-center gap-2">
-              <span className="w-1.5 h-5 bg-pine inline-block" aria-hidden />
+              <span className="w-1.5 h-5 bg-pine rounded-full inline-block" aria-hidden />
               先说做得好的
             </h2>
             <ul className="space-y-3">
@@ -109,7 +109,7 @@ export default function ReportPage() {
 
           <div>
             <h2 className="font-serif font-bold text-lg mb-4 flex items-center gap-2">
-              <span className="w-1.5 h-5 bg-crimson inline-block" aria-hidden />
+              <span className="w-1.5 h-5 bg-crimson rounded-full inline-block" aria-hidden />
               漏洞清单 —— 评委火力点
             </h2>
             <ul className="space-y-3">
@@ -133,7 +133,7 @@ export default function ReportPage() {
             </ul>
           </div>
 
-          <div className="bg-pine text-paper p-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="bg-pine text-paper p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="font-serif font-bold text-xl">漏洞看清了，进舱实战。</p>
               <p className="text-paper/60 text-sm mt-1">

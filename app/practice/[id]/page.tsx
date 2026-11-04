@@ -27,6 +27,8 @@ interface PendingQuestion {
 const ROUND_LIMIT = { normal: 9, hell: 10 } as const;
 // 与服务端 SDK 45 秒超时 + 1 次重试对齐：前端 50 秒封顶，绝不无限等待
 const JUDGE_TIMEOUT = 50_000;
+// 限时作答：模拟真实答辩节奏（倒计时归零只提示，不清空输入）
+const ANSWER_LIMIT_SEC = { normal: 90, hell: 60 } as const;
 
 export default function PracticePage() {
   const { id } = useParams<{ id: string }>();
@@ -47,12 +49,28 @@ export default function PracticePage() {
   const [startFailed, setStartFailed] = useState(false);
   const [askModal, setAskModal] = useState(false);
   const [askText, setAskText] = useState("");
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
 
   const scrollDown = useCallback(() => {
     requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }));
   }, []);
+
+  // 限时作答倒计时：出新题启动，答完/结束/超时停止；超时只提示不清空。
+  // 题目切换时在渲染期同步调整状态（React 官方 prop→state 调整模式，避免 effect 内同步 setState）
+  const mode = session?.mode;
+  const [timerFor, setTimerFor] = useState<PendingQuestion | null>(null);
+  if (timerFor !== pendingQuestion) {
+    setTimerFor(pendingQuestion);
+    setSecondsLeft(pendingQuestion && !ended ? ANSWER_LIMIT_SEC[mode ?? "normal"] : null);
+  }
+  const timerRunning = secondsLeft != null && !ended && pendingQuestion != null;
+  useEffect(() => {
+    if (!timerRunning) return;
+    const t = setInterval(() => setSecondsLeft((s) => (s == null ? null : Math.max(0, s - 1))), 1000);
+    return () => clearInterval(t);
+  }, [timerRunning]);
 
   function pushSystem(text: string) {
     setBubbles((bs) => [...bs, { kind: "system", text }]);
@@ -343,7 +361,7 @@ export default function PracticePage() {
       {mock && <MockBanner reason={mockReason} />}
 
       {/* 评委席状态栏 */}
-      <div className="bg-pine text-paper p-4 sm:p-5 mb-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+      <div className="bg-pine text-paper p-4 sm:p-5 mb-6 rounded-2xl flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="min-w-0">
           <p className="text-[11px] text-paper/50 tracking-widest">{comp.name} · 评委席</p>
           <p className="font-serif font-bold text-lg truncate">
@@ -415,7 +433,7 @@ export default function PracticePage() {
       )}
 
       {/* 对话区 */}
-      <div className="bg-card border border-line p-5 sm:p-7 min-h-[50vh] max-h-[62vh] overflow-y-auto space-y-5">
+      <div className="bg-card border border-line rounded-3xl p-5 sm:p-7 min-h-[50vh] max-h-[62vh] overflow-y-auto space-y-5">
         {bubbles.map((b, i) =>
           b.kind === "system" ? (
             <p key={i} className="text-center text-xs text-muted py-1">
@@ -423,13 +441,13 @@ export default function PracticePage() {
             </p>
           ) : b.kind === "user" ? (
             <div key={i} className="fade-up flex justify-end">
-              <div className="max-w-[80%] bg-pine text-paper px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="max-w-[80%] bg-pine text-paper px-4 py-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap">
                 {b.text}
               </div>
             </div>
           ) : (
             <div key={i} className="fade-up flex gap-3">
-              <div className="w-8 h-8 bg-pine text-paper font-serif text-xs flex items-center justify-center shrink-0 mt-0.5" aria-hidden>
+              <div className="w-8 h-8 bg-pine text-paper font-serif text-xs rounded-lg flex items-center justify-center shrink-0 mt-0.5" aria-hidden>
                 评
               </div>
               <div className="max-w-[85%]">
@@ -466,7 +484,7 @@ export default function PracticePage() {
 
         {busy && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 bg-pine text-paper font-serif text-xs flex items-center justify-center shrink-0" aria-hidden>
+            <div className="w-8 h-8 bg-pine text-paper font-serif text-xs rounded-lg flex items-center justify-center shrink-0" aria-hidden>
               评
             </div>
             <div className="bg-paper border border-line px-4 py-3 text-sm flex items-center gap-1">
@@ -492,7 +510,7 @@ export default function PracticePage() {
 
       {/* 输入区 */}
       {ended ? (
-        <div className="mt-5 bg-pine text-paper p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="mt-5 bg-pine text-paper p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4">
           <p className="font-serif font-bold text-lg">
             本场 {records.length} 题答完。评委退场，复盘官进场。
           </p>
@@ -501,7 +519,30 @@ export default function PracticePage() {
           </button>
         </div>
       ) : (
-        <div className="mt-5 flex gap-3">
+        <div className="mt-5">
+          {secondsLeft != null && (
+            <div className="mb-2">
+              <div className="h-1 bg-line/60 overflow-hidden" aria-hidden>
+                <div
+                  className={`h-full ease-linear ${
+                    secondsLeft === 0 ? "bg-crimson" : secondsLeft <= 15 ? "bg-crimson/80" : secondsLeft <= 40 ? "bg-copper" : "bg-pine"
+                  }`}
+                  style={{ width: `${(secondsLeft / ANSWER_LIMIT_SEC[mode ?? "normal"]) * 100}%`, transition: "width 1s linear" }}
+                />
+              </div>
+              <p className="text-[11px] text-muted mt-1" role="timer" aria-label={`剩余作答时间 ${secondsLeft} 秒`}>
+                {secondsLeft > 0 ? (
+                  <>
+                    限时作答 <strong className={secondsLeft <= 15 ? "text-crimson" : ""}>{secondsLeft}s</strong>
+                    （模拟现场节奏，超时不清空你的回答）
+                  </>
+                ) : (
+                  <span className="text-crimson font-bold">已超时——正式答辩此刻评委会打断你了。写完再发也可以。</span>
+                )}
+              </p>
+            </div>
+          )}
+          <div className="flex gap-3">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -520,7 +561,7 @@ export default function PracticePage() {
             <button
               onClick={send}
               disabled={busy || !input.trim() || !pendingQuestion}
-              className="bg-pine text-paper font-bold px-6 py-3 flex-1 hover:bg-pinedeep transition-colors disabled:opacity-40"
+              className="bg-pine text-paper font-bold px-6 py-3 rounded-xl flex-1 hover:bg-pinedeep transition-colors disabled:opacity-40"
             >
               回答
             </button>
@@ -538,6 +579,7 @@ export default function PracticePage() {
             >
               练够了，去复盘
             </button>
+            </div>
           </div>
         </div>
       )}
@@ -553,7 +595,7 @@ export default function PracticePage() {
           onClick={() => setAskModal(false)}
         >
           <div
-            className="bg-paper border border-line w-full max-w-lg p-6"
+            className="bg-paper border border-line rounded-3xl w-full max-w-lg p-6"
             role="dialog"
             aria-modal="true"
             aria-label="评委现场出题"
@@ -588,7 +630,7 @@ export default function PracticePage() {
               <button
                 onClick={submitJudgeQuestion}
                 disabled={!askText.trim()}
-                className="bg-pine text-paper font-bold px-5 py-2 hover:bg-pinedeep transition-colors disabled:opacity-40"
+                className="bg-pine text-paper font-bold px-5 py-2 rounded-xl hover:bg-pinedeep transition-colors disabled:opacity-40"
               >
                 交给评委提问
               </button>

@@ -44,12 +44,29 @@ export async function POST(req: Request) {
   const askedQs = body.asked.map((a) => a.question);
 
   // 出题弹药：60% 锚定诊断弱点 + 40% 知识库高频题（技术方案 §3.3）
-  const bankPool = QUESTION_BANK.filter(
+  // 题库按维度轮询交错后再截断：直接 slice(0,18) 会偏向前几个维度（创新性/商业），后维度（风险/叙事）几乎出不了
+  const bankAll = QUESTION_BANK.filter(
     (b) => (b.comps === "all" || b.comps.includes(body.competition)) && !askedQs.includes(b.q)
-  )
-    .slice(0, 18)
-    .map((b) => `【${b.dimension}】${b.q}（可追问：${b.followup}）`)
-    .join("\n");
+  );
+  const byDim = new Map<string, typeof bankAll>();
+  for (const b of bankAll) {
+    const arr = byDim.get(b.dimension) ?? [];
+    arr.push(b);
+    byDim.set(b.dimension, arr);
+  }
+  const bankInterleaved: string[] = [];
+  let added = true;
+  while (added) {
+    added = false;
+    for (const arr of byDim.values()) {
+      const b = arr.shift();
+      if (b) {
+        bankInterleaved.push(`【${b.dimension}】${b.q}（可追问：${b.followup}）`);
+        added = true;
+      }
+    }
+  }
+  const bankPool = bankInterleaved.slice(0, 18).join("\n");
 
   const transcript = body.asked
     .map((a) => `评委：${a.question}\n选手：${a.answer || "（未作答）"}${a.score ? `（评分 ${a.score}/5${a.comment ? `，评语：${a.comment}` : ""}）` : ""}`)
@@ -194,25 +211,35 @@ function mockTurn(body: Body, limit: number): JudgeTurn {
 
   const next = pickQuestion(idx);
   const goodAnswer = score >= 4;
+  let comment = goodAnswer
+    ? GOOD_COMMENTS[idx % GOOD_COMMENTS.length]
+    : COMMENTS[(score + idx) % COMMENTS.length];
+  // 低分时三分之一的概率直接点名诊断弱点，模拟真实评委「就是冲着你这个洞来的」
+  if (score <= 2 && weaknesses.length && idx % 3 === 0) {
+    const w = weaknesses[idx % weaknesses.length];
+    comment = `这可是体检标过的洞：「${w.point.slice(0, 24)}」，你的回答还是没拿出数据。`;
+  }
   return {
     score,
-    comment: goodAnswer
-      ? GOOD_COMMENTS[idx % GOOD_COMMENTS.length]
-      : COMMENTS[(score + idx) % COMMENTS.length],
+    comment,
     action: consecutiveLow ? "end" : "next",
     question: consecutiveLow ? "今天先到这里。把答不上的题带去复盘，一个一个补。" : next.q,
     target: consecutiveLow ? undefined : next.target,
   };
 }
 
+// 演示模式（断网兜底）评分：长度分层 + 特征加权，比纯「长度+数字正则」更难被现场识破
 function scoreAnswer(answer: string): number {
-  const len = answer.trim().length;
-  if (len === 0) return 1;
-  const hasNumber = /\d/.test(answer);
-  if (len >= 120 && hasNumber) return 5;
-  if (len >= 60) return hasNumber ? 4 : 3;
-  if (len >= 25) return 3;
-  return 2;
+  const t = answer.trim();
+  if (!t) return 1;
+  let s = 2; // 有作答但空泛起步
+  if (t.length >= 20) s = 3;
+  if (t.length >= 50) s = 4;
+  if (t.length >= 110) s = 5;
+  if (!/\d/.test(t)) s -= 1; // 全程没有数字：砍一档（评委最 反感的「没有数据支撑」）
+  if (/%|万|亿|元|个月|倍|个用户|家|所/.test(t)) s += 1; // 有量化单位：加一档
+  if (/相比|竞品|高于|低于|超过|对标|领先|第一|第二|其次|最后|综上/.test(t)) s += 1; // 有对比/结构词
+  return Math.max(1, Math.min(5, s));
 }
 
 const COMMENTS = [
@@ -221,14 +248,21 @@ const COMMENTS = [
   "这个回答评委大概率会继续追问，先自己补牢。",
   "有数据意识，继续保持这个答法。",
   "答得稳，但注意别绕开问题的核心。",
+  "框架有了，缺的是能落地的细节和数字。",
+  "说了不少，核心问题的答案我只听到一半。",
+  "这个答法在正式赛场上撑不过第一轮追问。",
 ];
 const LOW_COMMENTS = [
   "这个回答太空了，评委会当场打断你。",
   "你在回避问题的核心，再来一次。",
   "没有数据支撑的说法，说服力为零。",
+  "绕开了两圈，还是没碰到问题本身。",
+  "这套说辞评委每年听几百遍，给个具体数。",
 ];
 const GOOD_COMMENTS = [
   "有数据有逻辑，这个答法评委会记住。",
   "答得扎实，证据意识很好。",
   "直接回应了要害，稳。",
+  "数字到位，还能主动交代口径，加分。",
+  "这个回答的层次感很好，先结论后依据。",
 ];

@@ -36,10 +36,14 @@
   color: inherit;
   font: inherit;
   cursor: pointer;
-  outline: none;
   transform-origin: 50% 50%;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* 鼠标点击不出圈；键盘 Tab 焦点交还全局 :focus-visible 光圈（globals.css） */
+.jelly-radio__chip:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .jelly-radio__chip[data-on='true'] {

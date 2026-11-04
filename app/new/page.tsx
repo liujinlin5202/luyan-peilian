@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Stepper, { Step } from "@/components/Stepper";
+import mammoth from "mammoth";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS } from "@/lib/knowledge";
 import { useDataLayer } from "@/lib/data-layer";
@@ -34,7 +36,6 @@ export default function NewSessionPage() {
 
   useEffect(() => {
     if (!busy) return;
-    setElapsed(0);
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [busy]);
@@ -42,10 +43,25 @@ export default function NewSessionPage() {
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (/\.(txt|md)$/i.test(f.name)) {
-      setBpText(await f.text());
-    } else {
-      setError("文件解析暂支持 .txt / .md，Word/PDF 请复制文本粘贴");
+    // localStorage 单键约 5MB，BP 只需核心章节：超限直接拦下并说明
+    if (f.size > 200 * 1024) {
+      setError("文件超过 200KB：诊断只需核心章节，请精简后再上传");
+      return;
+    }
+    try {
+      if (/\.(txt|md)$/i.test(f.name)) {
+        setBpText(await f.text());
+      } else if (/\.docx$/i.test(f.name)) {
+        // 真实用户的 BP 几乎都是 Word：mammoth 纯前端抽取文本，不经过服务器
+        const { value } = await mammoth.extractRawText({ arrayBuffer: await f.arrayBuffer() });
+        setBpText(value);
+      } else {
+        setError("文件解析支持 .docx / .txt / .md，PDF 请复制文本粘贴");
+        return;
+      }
+      setError("");
+    } catch {
+      setError("文件解析失败，请确认是有效的 .docx/.txt/.md，或直接复制文本粘贴");
     }
   }
 
@@ -61,6 +77,7 @@ export default function NewSessionPage() {
     if (bpText.trim().length < 50) return setError("BP 内容太短，至少 50 字（可只贴核心章节）");
 
     setBusy(true);
+    setElapsed(0);
     try {
       if (!layer) throw new Error("数据层初始化中，请重试");
       const res = await fetch("/api/diagnose", {
@@ -89,7 +106,16 @@ export default function NewSessionPage() {
       });
       router.push(`/report/${saved.session_id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "诊断失败，请重试");
+      const quota =
+        err instanceof DOMException &&
+        (err.name === "QuotaExceededError" || (err as { code?: number }).code === 22);
+      setError(
+        quota
+          ? "浏览器本地存储空间不足：请在训练档案删除旧场次，或精简 BP 后重试"
+          : err instanceof Error
+            ? err.message
+            : "诊断失败，请重试"
+      );
       setBusy(false);
     }
   }
@@ -100,19 +126,19 @@ export default function NewSessionPage() {
 
   return (
     <section className="mx-auto max-w-2xl px-5 pt-24 pb-14">
-      <a href="/" className="text-sm text-muted hover:text-ink transition-colors">
+      <Link href="/" className="text-sm text-muted hover:text-ink transition-colors">
         ← 返回首页
-      </a>
+      </Link>
       <h1 className="font-serif font-bold text-3xl mt-5 mb-1">新建一场训练</h1>
       <p className="text-muted text-sm mb-6">填写项目信息，诊断官将按目标赛事的评分标准逐维度体检。</p>
 
-      <div className="bg-card border border-line p-6 lg:p-8">
+      <div className="bg-card border border-line rounded-3xl p-6 lg:p-8">
         <Stepper
           initialStep={1}
           linear
           disableStepIndicators={busy}
           width="100%"
-          radius={8}
+          radius={24}
           theme="light"
           frame={false}
           onStepChange={(step) => {
@@ -186,7 +212,7 @@ export default function NewSessionPage() {
             <div className="space-y-5">
               <label className="block">
                 <span className="text-sm font-medium block mb-1.5">
-                  商业计划书 <span className="text-muted font-normal">（粘贴全文，或上传 .txt/.md）</span>
+                  商业计划书 <span className="text-muted font-normal">（粘贴全文，或上传 .docx/.txt/.md）</span>
                 </span>
                 <textarea
                   value={bpText}
@@ -199,7 +225,7 @@ export default function NewSessionPage() {
                   当前 {bpText.length} 字
                   <label className="ml-3 underline cursor-pointer hover:text-copper">
                     上传文件
-                    <input type="file" accept=".txt,.md" onChange={onFile} className="hidden" />
+                    <input type="file" accept=".txt,.md,.docx" onChange={onFile} className="hidden" />
                   </label>
                 </span>
               </label>

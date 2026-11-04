@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FoldText } from "@/components/fold-text";
+import { useDialog } from "@/lib/use-dialog";
 import "./fold-text.css";
 
 /* 操作指引弹层内容 */
@@ -12,9 +13,9 @@ const GUIDE_STEPS = [
 ];
 
 const GUIDE_PARTS = [
-  ["新建训练", "填团队名称、选目标赛事，粘贴 BP 全文（或上传 .txt/.md），开始诊断"],
-  ["训练强度", "普通模式 8-12 题建立信心；地狱模式追问到底，赛前排雷"],
-  ["训练档案", "所有场次与成绩曲线集中管理，可删除单场测试数据"],
+  ["新建训练", "填团队名称、选目标赛事，粘贴 BP 全文（或上传 .docx/.txt/.md），开始诊断"],
+  ["训练强度", "普通模式约 8-9 题建立信心；地狱模式追问到底，赛前排雷"],
+  ["训练档案", "所有场次与成绩曲线集中管理，可删除单场测试数据，支持导出/导入备份"],
   ["漏洞追踪", "上一场未解决的漏洞会带进新一场追问，复盘时标记「已关闭」即闭环"],
 ];
 
@@ -117,6 +118,7 @@ BEAMS.push({
 
 export default function HomePage() {
   const [guideOpen, setGuideOpen] = useState(false);
+  const guidePanelRef = useDialog(guideOpen);
 
   useEffect(() => {
     if (!guideOpen) return;
@@ -359,6 +361,13 @@ export default function HomePage() {
                 </svg>
               </div>
             </div>
+            {/* 一句话价值主张：评委 5 秒内能建立「这是干嘛的」的认知 */}
+            <p
+              className="hero-rise mt-5 max-w-xl text-muted text-sm sm:text-base leading-relaxed"
+              style={{ "--d": "0.6s" } as React.CSSProperties}
+            >
+              AI 评委团按赛事评分标准给你的 BP 体检漏洞、模拟答辩逐题追问——把你第一次被问倒，提前到赛前。
+            </p>
           </div>
 
           {/* 底部：引文 + 双胶囊按钮（品牌行居中于按钮上方） */}
@@ -427,7 +436,9 @@ export default function HomePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-label="操作指引">
           <div className="fade-in absolute inset-0 bg-ink/45 backdrop-blur-sm" onClick={() => setGuideOpen(false)} aria-hidden="true" />
           <div
-            className="hero-rise relative w-full max-w-2xl max-h-[86dvh] overflow-y-auto bg-paper border border-ink shadow-2xl"
+            ref={guidePanelRef}
+            tabIndex={-1}
+            className="hero-rise relative w-full max-w-2xl max-h-[86dvh] overflow-y-auto bg-paper border border-ink shadow-2xl outline-none"
             style={{ "--d": "0s" } as React.CSSProperties}
           >
             <button

@@ -321,18 +321,31 @@ export function FoldText({
       }
     };
 
+    // 指针移动只记坐标，aim 合并到 gsap.ticker 每帧最多跑一次：
+    // 之前每个 pointermove 同步读 getBoundingClientRect + 写样式，首页大字在低端机会掉帧
+    let aimQueued = false;
+    const runAim = () => {
+      aimQueued = false;
+      aim();
+    };
+    const scheduleAim = () => {
+      if (aimQueued) return;
+      aimQueued = true;
+      gsap.ticker.add(runAim);
+    };
+
     const handleMove = (event: PointerEvent) => {
       pointer = { x: event.clientX, y: event.clientY };
-      aim();
+      scheduleAim();
     };
 
     const handleLeave = () => {
       pointer = null;
-      aim();
+      scheduleAim();
     };
 
     const handleScroll = () => {
-      if (pointer) aim();
+      if (pointer) scheduleAim();
     };
 
     if (refold) {
@@ -346,6 +359,7 @@ export function FoldText({
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("scroll", handleScroll, { capture: true });
       document.documentElement.removeEventListener("pointerleave", handleLeave);
+      if (aimQueued) gsap.ticker.remove(runAim);
       gsap.ticker.remove(relax);
       scrollTrigger?.kill();
       timeline?.kill();

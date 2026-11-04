@@ -6,7 +6,7 @@
 import { useMemo } from "react";
 import { qaTable, sessionTable, teamTable, uid, weaknessTable } from "./store";
 import { useAuth } from "./auth-context";
-import { getSupabase, isSupabaseConfigured } from "./supabase";
+import { getSupabase } from "./supabase";
 import type { QARecord, Session, Team, WeaknessItem } from "./types";
 
 type SessionInput = Omit<Session, "session_id"> & { session_id?: string };

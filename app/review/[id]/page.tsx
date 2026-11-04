@@ -44,6 +44,21 @@ export default function ReviewPage() {
   // reviewedRef 防重：React StrictMode 下 effect 会执行两次，只允许发一次复盘请求
   const reviewedRef = useRef(false);
 
+  // 漏洞确认结果恢复：verdict() 实时落库，刷新/回访时从漏洞表回填按钮状态（不再回「待确认」）
+  async function restoreVerdicts(s: Session, rev: ReviewReport) {
+    if (!layer) return;
+    const items = await layer.weakness.listByTeam(s.team_id);
+    const byDesc = new Map(
+      items.filter((w) => w.session_id === s.session_id).map((w) => [w.description, w.status] as const)
+    );
+    const restored: Record<number, WeaknessStatus> = {};
+    rev.weaknesses.forEach((w, i) => {
+      const st = byDesc.get(w.description);
+      if (st === "confirmed" || st === "invalid") restored[i] = st;
+    });
+    if (Object.keys(restored).length) setVerdicts(restored);
+  }
+
   useEffect(() => {
     if (!layer || reviewedRef.current) return;
     // reviewedRef 只拦截「复盘 API 重复调用」；前面的本地/云端读取是幂等的，
@@ -76,6 +91,7 @@ export default function ReviewPage() {
 
         if (s.review) {
           setReview(s.review);
+          void restoreVerdicts(s, s.review);
         } else if (records.length) {
           const res = await fetch("/api/review", {
             method: "POST",
@@ -102,6 +118,7 @@ export default function ReviewPage() {
           if (!res.ok || data.error) throw new Error(data.error || "复盘失败");
           setReview(data);
           await layer.session.update(id, { review: data, status: "reviewed" });
+          void restoreVerdicts(s, data);
         } else {
           setFatal(true);
           setError("本场没有问答记录，无法复盘。");
@@ -112,6 +129,7 @@ export default function ReviewPage() {
         setLoading(false);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, layer, retryNonce]);
 
   // 复盘失败重试（网络/接口类错误；场次不存在等 fatal 错误不显示此按钮）
@@ -230,7 +248,7 @@ export default function ReviewPage() {
         <p className="font-serif text-2xl mb-3">{error || "复盘报告不存在"}</p>
         <div className="flex items-center justify-center gap-5">
           {!fatal && (
-            <button onClick={retryReview} className="bg-pine text-paper font-bold px-5 py-2.5 hover:bg-pinedeep transition-colors">
+            <button onClick={retryReview} className="bg-pine text-paper font-bold px-5 py-2.5 rounded-xl hover:bg-pinedeep transition-colors">
               重试复盘
             </button>
           )}
@@ -272,7 +290,7 @@ export default function ReviewPage() {
       {/* ── 栏目一 · 本场评分 ─────────────────────────── */}
       <SectionHead no="01" title="本场评分" desc="答辩表现分 · 与 BP 诊断分无关" />
       <section className="grid lg:grid-cols-[2fr_3fr] gap-6 mb-14">
-        <div className="bg-card border border-line p-7 flex flex-col justify-center">
+        <div className="bg-card border border-line rounded-3xl p-7 flex flex-col justify-center">
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
             {prevScore != null && (
               <div className="text-center opacity-60">
@@ -293,7 +311,7 @@ export default function ReviewPage() {
             )}
           </div>
         </div>
-        <div className="bg-card border border-line p-6">
+        <div className="bg-card border border-line rounded-3xl p-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="shrink-0">
               <RadarChart dims={review.dimension_scores} size={230} />
@@ -312,7 +330,7 @@ export default function ReviewPage() {
           {records.map((r) => {
             const pq = review.per_question.find((p) => p.round === r.round);
             return (
-              <li key={r.record_id} className="bg-card border border-line px-5 py-4 text-sm">
+              <li key={r.record_id} className="bg-card border border-line rounded-2xl px-5 py-4 text-sm">
                 <div className="flex items-baseline gap-2.5 mb-1.5 flex-wrap">
                   <span className="font-serif font-bold text-copper">Q{r.round}</span>
                   <span
@@ -445,7 +463,7 @@ export default function ReviewPage() {
           <p className="text-xs text-muted mt-3">已确认 {confirmedCount} 条，写入档案成功。</p>
         )}
 
-        <div className="mt-10 bg-pine text-paper p-6 space-y-3 no-print">
+        <div className="mt-10 bg-pine text-paper p-6 rounded-2xl space-y-3 no-print">
           <p className="font-serif font-bold text-xl">漏洞确认完，就再练一场。</p>
           <p className="text-paper/60 text-sm">
             每一场都会被档案记住。得分曲线和漏洞闭环率，就是你备赛进度最硬的证据。

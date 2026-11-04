@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { COMPETITIONS, PERSONAS } from "@/lib/knowledge";
 import { useDataLayer, hasLocalData, alreadyMigrated, importLocalToCloud } from "@/lib/data-layer";
+import { useDialog } from "@/lib/use-dialog";
 import type { QARecord, Session, Team, WeaknessItem } from "@/lib/types";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -75,6 +76,7 @@ export default function ArchivePage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [bpSession]);
+  const bpPanelRef = useDialog(!!bpSession);
 
   useEffect(() => {
     if (!layer || !activeTeam) return;
@@ -212,6 +214,7 @@ export default function ArchivePage() {
   if (!ready) return null;
 
   const trend = teamSessions.filter((s) => s.overall_score != null);
+  const reviewTrend = teamSessions.filter((s) => s.review);
   const latest = teamSessions[teamSessions.length - 1];
 
   return (
@@ -252,7 +255,7 @@ export default function ArchivePage() {
         <div className="text-center py-20">
           <p className="font-serif text-2xl text-pine mb-3">档案还空着</p>
           <p className="text-muted text-sm mb-8">每一场训练都会在这里留下得分曲线和漏洞闭环记录。</p>
-          <Link href="/" className="bg-pine text-paper px-6 py-3 font-bold hover:bg-pinedeep transition-colors">
+          <Link href="/" className="bg-pine text-paper px-6 py-3 font-bold rounded-xl hover:bg-pinedeep transition-colors">
             新建第一场训练
           </Link>
         </div>
@@ -297,14 +300,14 @@ export default function ArchivePage() {
 
           {/* 三项指标 */}
           <div className="grid sm:grid-cols-3 gap-4 mb-8">
-            <div className="bg-card border border-line p-6">
+            <div className="bg-card border border-line rounded-2xl p-6">
               <p className="text-xs text-muted tracking-widest mb-2">累计训练</p>
               <p className="font-serif font-bold text-4xl text-pine">
                 {teamSessions.length}
                 <span className="text-base text-muted font-sans font-normal"> 场</span>
               </p>
             </div>
-            <div className="bg-card border border-line p-6">
+            <div className="bg-card border border-line rounded-2xl p-6">
               <p className="text-xs text-muted tracking-widest mb-2">最新综合得分</p>
               <p className="font-serif font-bold text-4xl text-pine">
                 {latest?.overall_score ?? "--"}
@@ -320,7 +323,7 @@ export default function ArchivePage() {
                 )}
               </p>
             </div>
-            <div className="bg-card border border-line p-6">
+            <div className="bg-card border border-line rounded-2xl p-6">
               <p className="text-xs text-muted tracking-widest mb-2">漏洞闭环率</p>
               <p className="font-serif font-bold text-4xl text-pine">
                 {Math.round(stats.rate * 100)}
@@ -334,16 +337,27 @@ export default function ArchivePage() {
 
           {/* 得分趋势 */}
           {trend.length > 0 && (
-            <section className="bg-card border border-line p-6 mb-8">
+            <section className="bg-card border border-line rounded-3xl p-6 mb-8">
               <h2 className="font-serif font-bold text-lg mb-1">综合得分曲线</h2>
-              <p className="text-xs text-muted mb-5">口径：各场 BP 诊断分（与复盘的答辩表现分相互独立）</p>
-              <TrendChart points={trend.map((s, i) => ({ x: i, y: s.overall_score!, label: new Date(s.created_at).toLocaleDateString("zh-CN") }))} />
+              <p className="text-xs text-muted mb-5">口径：BP 诊断分（实线）与复盘答辩表现分（虚线）相互独立、各自看趋势</p>
+              <TrendChart
+                points={trend.map((s, i) => ({ x: i, y: s.overall_score!, label: new Date(s.created_at).toLocaleDateString("zh-CN") }))}
+                points2={
+                  reviewTrend.length > 1
+                    ? reviewTrend.map((s, i) => ({
+                        x: i,
+                        y: s.review!.dimension_scores.reduce((acc, d) => acc + d.score, 0),
+                        label: new Date(s.created_at).toLocaleDateString("zh-CN"),
+                      }))
+                    : undefined
+                }
+              />
             </section>
           )}
 
           {/* 漏洞追踪 */}
           {trackedWeaknesses.length > 0 && (
-            <section className="bg-card border border-line p-6 mb-8">
+            <section className="bg-card border border-line rounded-3xl p-6 mb-8">
               <div className="flex items-baseline justify-between gap-4 mb-5">
                 <h2 className="font-serif font-bold text-lg">漏洞追踪</h2>
                 <span className="text-xs text-muted">复盘里确认成立的漏洞在这里逐条闭环，标记「已解决」计入闭环率</span>
@@ -380,7 +394,7 @@ export default function ArchivePage() {
                 .slice()
                 .reverse()
                 .map((s) => (
-                  <div key={s.session_id} className="bg-card border border-line card-hover px-5 py-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+                  <div key={s.session_id} className="bg-card border border-line rounded-2xl card-hover px-5 py-4 flex flex-wrap items-center gap-x-5 gap-y-2">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">
                         {COMPETITIONS[s.competition]?.name} · {s.mode === "hell" ? "地狱" : "普通"}模式 · 首选{PERSONAS[s.persona].label}
@@ -390,25 +404,25 @@ export default function ArchivePage() {
                       </p>
                     </div>
                     {s.overall_score != null && <span className="font-serif font-bold text-2xl text-pine">{s.overall_score}<span className="text-xs text-muted font-sans font-normal">分</span></span>}
-                    <div className="flex gap-3 text-sm">
+                    <div className="flex items-center gap-1 text-sm">
                       <button
                         onClick={() => setBpSession(s)}
-                        className="text-pine underline underline-offset-4 hover:text-copper"
+                        className="text-pine underline underline-offset-4 hover:text-copper px-2 py-2.5"
                       >
                         BP
                       </button>
-                      <Link href={`/report/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper">
+                      <Link href={`/report/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper px-2 py-2.5">
                         诊断
                       </Link>
-                      <Link href={`/practice/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper">
+                      <Link href={`/practice/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper px-2 py-2.5">
                         陪练
                       </Link>
-                      <Link href={`/review/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper">
+                      <Link href={`/review/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper px-2 py-2.5">
                         复盘
                       </Link>
                       <button
                         onClick={() => removeSession(s.session_id)}
-                        className="text-muted underline underline-offset-4 hover:text-crimson transition-colors"
+                        className="text-muted underline underline-offset-4 hover:text-crimson transition-colors px-2 py-2.5 ml-1"
                       >
                         删除
                       </button>
@@ -425,7 +439,9 @@ export default function ArchivePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-label="查看 BP">
           <div className="fade-in absolute inset-0 bg-ink/45 backdrop-blur-sm" onClick={() => setBpSession(null)} aria-hidden="true" />
           <div
-            className="hero-rise relative w-full max-w-2xl max-h-[86dvh] overflow-y-auto bg-paper border border-ink shadow-2xl"
+            ref={bpPanelRef}
+            tabIndex={-1}
+            className="hero-rise relative w-full max-w-2xl max-h-[86dvh] overflow-y-auto bg-paper border border-ink shadow-2xl outline-none"
             style={{ "--d": "0s" } as React.CSSProperties}
           >
             <button
@@ -453,38 +469,63 @@ export default function ArchivePage() {
   );
 }
 
-function TrendChart({ points }: { points: { x: number; y: number; label: string }[] }) {
+function TrendChart({ points, points2 }: { points: { x: number; y: number; label: string }[]; points2?: { x: number; y: number; label: string }[] }) {
   if (points.length === 0) return null;
   const W = 640;
   const H = 200;
   const PAD = 36;
   const maxY = 100;
-  const px = (i: number) => PAD + (i * (W - PAD * 2)) / Math.max(1, points.length - 1);
+  const px = (i: number, n: number) => PAD + (i * (W - PAD * 2)) / Math.max(1, n - 1);
   const py = (v: number) => H - PAD - (v / maxY) * (H - PAD * 2);
-  const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${px(i)},${py(p.y)}`).join(" ");
+  const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${px(i, points.length)},${py(p.y)}`).join(" ");
+  const path2 = points2?.length ? points2.map((p, i) => `${i === 0 ? "M" : "L"}${px(i, points2.length)},${py(p.y)}`).join(" ") : "";
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="综合得分趋势">
-      {[0, 50, 100].map((v) => (
-        <g key={v}>
-          <line x1={PAD} x2={W - PAD} y1={py(v)} y2={py(v)} stroke="#d8d5cd" strokeWidth="1" />
-          <text x={PAD - 8} y={py(v) + 4} textAnchor="end" fontSize="10" fill="#6d6c66">
-            {v}
-          </text>
-        </g>
-      ))}
-      <path d={path} fill="none" stroke="#1c1c1a" strokeWidth="2.5" />
-      {points.map((p, i) => (
-        <g key={i}>
-          <circle cx={px(i)} cy={py(p.y)} r="4.5" fill="#2b46ff" stroke="#eceae5" strokeWidth="2" />
-          <text x={px(i)} y={py(p.y) - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#1c1c1a">
-            {p.y}
-          </text>
-          <text x={px(i)} y={H - 10} textAnchor="middle" fontSize="10" fill="#6d6c66">
-            {p.label}
-          </text>
-        </g>
-      ))}
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="综合得分趋势">
+        {[0, 50, 100].map((v) => (
+          <g key={v}>
+            <line x1={PAD} x2={W - PAD} y1={py(v)} y2={py(v)} stroke="#d8d5cd" strokeWidth="1" />
+            <text x={PAD - 8} y={py(v) + 4} textAnchor="end" fontSize="10" fill="#6d6c66">
+              {v}
+            </text>
+          </g>
+        ))}
+        {/* 序列二：复盘答辩表现分（虚线，错开 y 轴避免压住实线数值标签） */}
+        {path2 && (
+          <>
+            <path d={path2} fill="none" stroke="#2b46ff" strokeWidth="2" strokeDasharray="6 5" opacity="0.85" />
+            {points2!.map((p, i) => (
+              <circle key={`r${i}`} cx={px(i, points2!.length)} cy={py(p.y)} r="3.5" fill="#2b46ff" stroke="#eceae5" strokeWidth="1.5" />
+            ))}
+          </>
+        )}
+        {/* 序列一：BP 诊断分（实线） */}
+        <path d={path} fill="none" stroke="#1c1c1a" strokeWidth="2.5" />
+        {points.map((p, i) => (
+          <g key={i}>
+            <circle cx={px(i, points.length)} cy={py(p.y)} r="4.5" fill="#2b46ff" stroke="#eceae5" strokeWidth="2" />
+            <text x={px(i, points.length)} y={py(p.y) - 12} textAnchor="middle" fontSize="12" fontWeight="700" fill="#1c1c1a">
+              {p.y}
+            </text>
+            <text x={px(i, points.length)} y={H - 10} textAnchor="middle" fontSize="10" fill="#6d6c66">
+              {p.label}
+            </text>
+          </g>
+        ))}
+      </svg>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted mt-2">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block w-5 h-0.5 bg-[#1c1c1a]" aria-hidden />
+          BP 诊断分
+        </span>
+        {path2 && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block w-5 border-t-2 border-dashed border-[#2b46ff]" aria-hidden />
+            复盘答辩分
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
