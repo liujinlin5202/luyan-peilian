@@ -12,7 +12,8 @@ interface AuthState {
   loading: boolean;
   isConfigured: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error?: string; needsConfirm?: boolean }>;
+  sendCode: (email: string) => Promise<{ error?: string; demoCode?: string }>;
+  signUp: (email: string, password: string, code: string, displayName?: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthState>({
   loading: false,
   isConfigured: false,
   signIn: async () => ({ error: "Supabase 未配置" }),
+  sendCode: async () => ({ error: "Supabase 未配置" }),
   signUp: async () => ({ error: "Supabase 未配置" }),
   signOut: async () => {},
 });
@@ -55,16 +57,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         return error ? { error: error.message } : {};
       },
-      async signUp(email, password, displayName) {
+      async sendCode(email) {
+        try {
+          const res = await fetch("/api/auth/send-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          const data = (await res.json()) as { error?: string; demoCode?: string };
+          if (!res.ok || data.error) return { error: data.error || "验证码发送失败" };
+          return { demoCode: data.demoCode };
+        } catch {
+          return { error: "网络异常，请重试" };
+        }
+      },
+      async signUp(email, password, code, displayName) {
         const supabase = getSupabase();
         if (!supabase) return { error: "Supabase 未配置" };
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { display_name: displayName } },
-        });
-        if (error) return { error: error.message };
-        return { needsConfirm: !data.session };
+        try {
+          const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password, code, displayName }),
+          });
+          const data = (await res.json()) as { error?: string };
+          if (!res.ok || data.error) return { error: data.error || "注册失败" };
+          const { error } = await supabase.auth.signInWithPassword({ email, password });
+          return error ? { error: error.message } : {};
+        } catch {
+          return { error: "网络异常，请重试" };
+        }
       },
       async signOut() {
         const supabase = getSupabase();

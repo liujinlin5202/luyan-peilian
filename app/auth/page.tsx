@@ -8,15 +8,33 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
 export default function AuthPage() {
-  const { isConfigured, signIn, signUp } = useAuth();
+  const { isConfigured, signIn, signUp, sendCode } = useAuth();
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [code, setCode] = useState("");
+  const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  async function getCode() {
+    setError("");
+    setNotice("");
+    if (!email.trim()) return setError("请先填写邮箱");
+    setSending(true);
+    try {
+      const { error: err, demoCode: dc } = await sendCode(email.trim());
+      if (err) throw new Error(err);
+      setNotice(dc ? `演示模式：验证码 ${dc}（10 分钟内有效）` : "验证码已发送，请查收邮件");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "获取验证码失败");
+    } finally {
+      setSending(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,13 +47,10 @@ export default function AuthPage() {
         if (err) throw new Error(err);
         router.push("/archive");
       } else {
-        const { error: err, needsConfirm } = await signUp(email.trim(), password, displayName.trim());
+        if (!code.trim()) throw new Error("请先获取并填写邮箱验证码");
+        const { error: err } = await signUp(email.trim(), password, code.trim(), displayName.trim());
         if (err) throw new Error(err);
-        if (needsConfirm) {
-          setNotice("注册成功：请到邮箱完成确认后再登录。");
-        } else {
-          router.push("/archive");
-        }
+        router.push("/archive");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "操作失败，请重试");
@@ -99,6 +114,31 @@ export default function AuthPage() {
             placeholder="至少 6 位"
           />
         </label>
+
+        {mode === "signup" && (
+          <label className="block">
+            <span className="text-sm font-medium block mb-1.5">邮箱验证码</span>
+            <div className="flex gap-2">
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="6 位验证码"
+                className="flex-1 min-w-0 border border-line bg-paper px-3 py-2.5 text-sm outline-none focus:border-copper transition-colors"
+              />
+              <button
+                type="button"
+                onClick={getCode}
+                disabled={sending}
+                className="shrink-0 border border-line px-3 py-2.5 text-sm text-muted hover:border-copper hover:text-copper transition-colors disabled:opacity-50"
+              >
+                {sending ? "生成中…" : "获取验证码"}
+              </button>
+            </div>
+            <span className="text-xs text-muted mt-1 block">
+              简易验证：验证码直接显示在页面上（演示模式），无需真实收邮件。
+            </span>
+          </label>
+        )}
 
         {error && <p className="text-crimson text-sm border border-crimson/30 bg-crimson/5 px-3 py-2">{error}</p>}
         {notice && <p className="text-pine text-sm border border-pine/30 bg-pine/5 px-3 py-2">{notice}</p>}
