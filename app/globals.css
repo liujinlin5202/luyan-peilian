@@ -136,7 +136,7 @@ html {
   );
 }
 
-/* ===== 首页开屏（美术馆风）：文字升起 × 编织体逐笔画出 ===== */
+/* ===== 首页开屏（美术馆风）：文字升起；曲线视觉由 WebThreads 组件负责 ===== */
 @keyframes hero-rise {
   from {
     opacity: 0;
@@ -147,75 +147,26 @@ html {
     transform: none;
   }
 }
-@keyframes weave-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes weave-float {
-  from {
-    transform: rotate(0deg) translateY(0);
-  }
-  to {
-    transform: rotate(-3deg) translateY(-10px);
-  }
-}
-/* hello 气球：透明渐变字缓慢漂浮 */
-@keyframes hello-float {
-  from {
-    transform: rotate(-5deg) translateY(0) scale(1);
-  }
-  to {
-    transform: rotate(4deg) translateY(-16px) scale(1.03);
-  }
-}
-/* 光束：逐束画出 + 流光脉冲 */
-@keyframes beam-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes beam-flow {
-  to {
-    stroke-dashoffset: -690;
-  }
-}
 
 @media (prefers-reduced-motion: no-preference) {
   .hero-rise {
     animation: hero-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: var(--d, 0s);
   }
-  /* 大脑线稿：逐笔描边（--i 为笔画序号），dash 值需大于最长路径长度 */
-  .weave path {
-    stroke-dasharray: 900;
-    stroke-dashoffset: 900;
-    animation: weave-draw 1s cubic-bezier(0.4, 0.2, 0.3, 1) forwards;
-    animation-delay: calc(var(--i, 0) * 40ms + 0.3s);
-  }
-  .weave-float {
-    animation: weave-float 7s 1.9s ease-in-out infinite alternate;
-  }
-  .hello-float {
-    animation: hello-float 9s 2s ease-in-out infinite alternate;
-  }
-  /* 光束：细束逐条画出（--i 序号错峰），虚线脉冲持续流动 */
-  .beam-draw {
-    stroke-dasharray: 1400;
-    stroke-dashoffset: 1400;
-    animation: beam-draw 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    animation-delay: calc(var(--i, 0) * 90ms + 0.2s);
-  }
-  .beam-flow {
-    stroke-dasharray: 70 620;
-    animation: beam-flow 7s 1.6s linear infinite;
-  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .weave path {
-    stroke-dasharray: none;
-    stroke-dashoffset: 0;
+/* ===== 路由切换：页面淡入（app/template.tsx 挂 .page-fade，首页除外） ===== */
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .page-fade {
+    animation: page-fade 0.45s ease-out both;
   }
 }
 

@@ -67,7 +67,7 @@ export default function NewSessionPage() {
 
   function validateStep(step: number): string {
     if (step === 1 && !teamName.trim()) return "请填写团队名称";
-    if (step === 2 && bpText.trim().length < 50) return "BP 内容太短，至少 50 字（可只贴核心章节）";
+    if (step === 3 && bpText.trim().length < 50) return "BP 内容太短，至少 50 字（可只贴核心章节）";
     return "";
   }
 
@@ -129,8 +129,7 @@ export default function NewSessionPage() {
       <Link href="/" className="text-sm text-muted hover:text-ink transition-colors">
         ← 返回首页
       </Link>
-      <h1 className="font-serif font-bold text-3xl mt-5 mb-1">新建一场训练</h1>
-      <p className="text-muted text-sm mb-6">填写项目信息，诊断官将按目标赛事的评分标准逐维度体检。</p>
+      <h1 className="font-serif font-bold text-3xl mt-5 mb-6">新建一场训练</h1>
 
       <div className="bg-card border border-line rounded-3xl p-6 lg:p-8">
         <Stepper
@@ -151,9 +150,9 @@ export default function NewSessionPage() {
           backButtonProps={{ disabled: busy }}
           nextButtonProps={{
             disabled: busy,
-            className: currentStep === 3 ? "stepper__button--cta" : "",
+            className: currentStep === 4 ? "stepper__button--cta" : "",
             onClick: (event) => {
-              if (currentStep === 3) {
+              if (currentStep === 4) {
                 event.preventDefault();
                 submit();
               } else {
@@ -177,32 +176,48 @@ export default function NewSessionPage() {
             } as React.CSSProperties
           }
         >
-          <Step title="项目信息">
+          <Step title="团队名称">
             <div className="space-y-5">
-              <div className="grid sm:grid-cols-2 gap-5">
-                <label className="block">
-                  <span className="text-sm font-medium block mb-1.5">团队名称</span>
-                  <input
-                    value={teamName}
-                    onChange={(e) => setTeamName(e.target.value)}
-                    placeholder="如：星舟团队"
-                    className={fieldCls}
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-sm font-medium block mb-1.5">目标赛事</span>
-                  <select
-                    value={competition}
-                    onChange={(e) => setCompetition(e.target.value as CompetitionId)}
-                    className={fieldCls}
-                  >
-                    {Object.values(COMPETITIONS).map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <label className="block">
+                <span className="text-sm font-medium block mb-1.5">团队名称</span>
+                <input
+                  value={teamName}
+                  onChange={(e) => setTeamName(e.target.value)}
+                  placeholder="如：星舟团队"
+                  className={fieldCls}
+                />
+              </label>
+              {errorBanner}
+            </div>
+          </Step>
+
+          <Step title="目标赛事">
+            <div className="space-y-5">
+              <div>
+                <span className="text-sm font-medium block mb-2">目标赛事</span>
+                <div className="space-y-2.5">
+                  {Object.values(COMPETITIONS).map((c) => (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => setCompetition(c.id)}
+                      className={`w-full text-left border px-4 py-3 rounded-xl transition-colors ${
+                        competition === c.id
+                          ? "border-pine bg-pine text-paper"
+                          : "border-line bg-paper hover:border-copper/60"
+                      }`}
+                    >
+                      <span className="block text-sm font-semibold">{c.name}</span>
+                      <span
+                        className={`text-xs mt-1 leading-relaxed line-clamp-2 ${
+                          competition === c.id ? "text-paper/70" : "text-muted"
+                        }`}
+                      >
+                        {c.focus}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
               {errorBanner}
             </div>

@@ -39,164 +39,33 @@ export default function HomePage() {
     <div>
       {/* ===== 开屏：巨型字 × 绞带编织体 × 双胶囊入口 ===== */}
       <section className="relative overflow-hidden">
-        {/* 最底层：交叉光束（左），所有文字与图形压于其上 */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-[64vw] max-w-[700px] opacity-75 md:opacity-100" aria-hidden="true">
-          <svg
-            className="hero-rise h-full w-full"
-            viewBox="0 0 900 900"
-            fill="none"
-            preserveAspectRatio="xMinYMid slice"
-            style={{ "--d": "0.1s" } as React.CSSProperties}
-          >
-            <defs>
-              <linearGradient id="gV" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#8f6cf0" stopOpacity="0" />
-                <stop offset="0.22" stopColor="#8f6cf0" />
-                <stop offset="0.55" stopColor="#6d4fd8" />
-                <stop offset="0.85" stopColor="#b78cff" stopOpacity="0.05" />
-                <stop offset="1" stopColor="#b78cff" stopOpacity="0" />
-              </linearGradient>
-              <linearGradient id="gB" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#2b46ff" stopOpacity="0" />
-                <stop offset="0.3" stopColor="#2b46ff" />
-                <stop offset="0.6" stopColor="#6f8cff" />
-                <stop offset="0.85" stopColor="#6f8cff" stopOpacity="0.05" />
-                <stop offset="1" stopColor="#6f8cff" stopOpacity="0" />
-              </linearGradient>
-              <linearGradient id="gG" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#c9a24b" stopOpacity="0" />
-                <stop offset="0.3" stopColor="#c9a24b" />
-                <stop offset="0.85" stopColor="#e0c37a" stopOpacity="0.05" />
-                <stop offset="1" stopColor="#e0c37a" stopOpacity="0" />
-              </linearGradient>
-              <linearGradient id="gT" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stopColor="#2c9d8e" stopOpacity="0" />
-                <stop offset="0.25" stopColor="#2c9d8e" />
-                <stop offset="0.6" stopColor="#5fc9b8" />
-                <stop offset="0.85" stopColor="#8fdccd" stopOpacity="0.05" />
-                <stop offset="1" stopColor="#8fdccd" stopOpacity="0" />
-              </linearGradient>
-              <filter id="beamGlow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="6" />
-              </filter>
-            </defs>
-            {BEAMS.map((b, i) =>
-              b.flow ? (
-                <path
-                  key={i}
-                  d={b.d}
-                  stroke={`url(#${b.grad})`}
-                  strokeWidth={b.w}
-                  strokeLinecap="round"
-                  className="beam-flow"
-                  opacity={0.9}
-                />
-              ) : (
-                <g key={i}>
-                  <path
-                    d={b.d}
-                    stroke={`url(#${b.grad})`}
-                    strokeWidth={b.w * 3.4}
-                    filter="url(#beamGlow)"
-                    opacity={0.3}
-                    strokeLinecap="round"
-                    className="beam-draw"
-                    style={{ "--i": i } as React.CSSProperties}
-                  />
-                  <path
-                    d={b.d}
-                    stroke={`url(#${b.grad})`}
-                    strokeWidth={b.w}
-                    opacity={0.85}
-                    strokeLinecap="round"
-                    className="beam-draw"
-                    style={{ "--i": i } as React.CSSProperties}
-                  />
-                </g>
-              ),
-            )}
-          </svg>
+        {/* 最底层：WebThreads 曲线特效（暖金→雪青→雾蓝柔和三色渐变 + depth 扭转立体感；鼠标可拨动，点击空白处起浪） */}
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <WebThreads
+            colors={["#c29d5f", "#a08cc9", "#8a9fd4"]}
+            coreColor="#6d6c66"
+            lightMode
+            threadCount={13}
+            taper={0.55}
+            spread={0.16}
+            position={0.45}
+            speed={0.16}
+            depth={0.65}
+            opacity={0.85}
+            shimmer
+            mouseStrength={0.6}
+          />
         </div>
-        {/* 背景丰富层：柔光晕 × hello 气球（透明渐变，衬在文字与编织体之后） */}
+        {/* 背景柔光晕：衬在文字之后，避免大面积纸面过于平坦 */}
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <div className="absolute -left-24 -top-24 h-[26rem] w-[26rem] rounded-full bg-[#f3d8c3] opacity-40 blur-3xl" />
           <div className="absolute -right-16 top-1/4 h-[22rem] w-[22rem] rounded-full bg-[#ccd8ff] opacity-40 blur-3xl" />
           <div className="absolute bottom-[-6rem] left-1/3 h-[20rem] w-[20rem] rounded-full bg-[#eadfc6] opacity-50 blur-3xl" />
-          <div
-            className="hero-rise absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 md:left-[52%] md:top-[40%]"
-            style={{ "--d": "0.45s" } as React.CSSProperties}
-          >
-            <svg viewBox="0 0 640 320" className="hello-float w-[min(92vw,760px)] md:w-[min(82vw,880px)] opacity-65" fill="none">
-              <defs>
-                <linearGradient id="helloGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4c4c44" stopOpacity="0.5" />
-                  <stop offset="24%" stopColor="#2c2c26" stopOpacity="0.4" />
-                  <stop offset="36%" stopColor="#1a1a16" stopOpacity="0.36" />
-                  <stop offset="64%" stopColor="#0e0e0c" stopOpacity="0.42" />
-                  <stop offset="86%" stopColor="#080807" stopOpacity="0.48" />
-                  <stop offset="100%" stopColor="#45443b" stopOpacity="0.42" />
-                </linearGradient>
-                <filter id="helloPuff" x="-20%" y="-20%" width="140%" height="150%">
-                  <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="blur" />
-                  <feSpecularLighting
-                    in="blur"
-                    surfaceScale="7"
-                    specularConstant="1.15"
-                    specularExponent="24"
-                    lightingColor="#ffffff"
-                    result="spec"
-                  >
-                    <fePointLight x="210" y="30" z="200" />
-                  </feSpecularLighting>
-                  <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn" />
-                  <feMerge>
-                    <feMergeNode in="SourceGraphic" />
-                    <feMergeNode in="specIn" />
-                  </feMerge>
-                </filter>
-              </defs>
-              {/* 底层：白色圆角胖描边（气球的白色包边）；上层：渐变圆角笔画 */}
-              <text
-                x="320"
-                y="235"
-                textAnchor="middle"
-                fontSize="200"
-                letterSpacing="0"
-                fill="none"
-                stroke="rgba(255,255,255,0.75)"
-                strokeWidth="9"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                style={{ fontFamily: 'var(--font-script),"Snell Roundhand","Brush Script MT",cursive' }}
-              >
-                hello
-              </text>
-              <text
-                x="320"
-                y="235"
-                textAnchor="middle"
-                fontSize="200"
-                letterSpacing="0"
-                fill="url(#helloGrad)"
-                stroke="url(#helloGrad)"
-                strokeWidth="5"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                filter="url(#helloPuff)"
-                style={{ fontFamily: 'var(--font-script),"Snell Roundhand","Brush Script MT",cursive' }}
-              >
-                hello
-              </text>
-              <ellipse cx="180" cy="112" rx="30" ry="12" fill="#ffffff" opacity="0.65" transform="rotate(-24 180 112)" />
-              <ellipse cx="455" cy="150" rx="14" ry="7" fill="#ffffff" opacity="0.5" transform="rotate(16 455 150)" />
-            </svg>
-          </div>
         </div>
         <div className="mx-auto max-w-6xl px-5 relative flex flex-col min-h-dvh">
-          {/* 两行巨型字（左） + 编织体（右），互不重叠 */}
-          <div className="relative mt-auto pt-16 -mb-6">
-            <div className="md:flex md:items-center md:justify-between md:gap-2">
-              <div className="tracking-tight leading-[1.08] text-[13vw] sm:text-7xl lg:text-[86px] xl:text-[92px] md:translate-y-16">
+          {/* 两行巨型字：居中偏上，落在丝线绞结点上方的留白区（无小字说明） */}
+          <div className="relative mt-[22dvh] md:mt-[24dvh] text-center">
+              <div className="tracking-tight leading-[1.08] text-[13vw] sm:text-7xl lg:text-[86px] xl:text-[92px]">
                 <span className="block font-serif italic text-[0.82em]">
                   <FoldText
                     text="在这里，"
@@ -244,40 +113,10 @@ export default function HomePage() {
                   />
                 </span>
               </div>
-              <div
-                className="hero-rise relative z-10 pointer-events-none flex justify-center mt-4 md:mt-0 md:flex-1 md:flex md:justify-end md:items-center md:-mr-32 md:-translate-y-28 lg:-translate-y-36 xl:-translate-y-44"
-                style={{ "--d": "0.4s" } as React.CSSProperties}
-              >
-                <svg
-                  className="weave weave-float -scale-y-100 rotate-[48deg] scale-x-125 w-[min(70vw,480px)] sm:w-[min(60vw,520px)] md:w-[min(38vw,440px)] lg:w-[min(36vw,460px)] xl:w-[min(35vw,480px)] md:max-w-full h-auto"
-                  viewBox="40 52 340 192"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  {WEAVE_PATHS.map((p, i) => (
-                    <path
-                      key={i}
-                      d={p.d}
-                      stroke={p.blue ? "#2b46ff" : "#1c1c1a"}
-                      strokeWidth={p.w}
-                      strokeLinecap="round"
-                      style={{ "--i": i } as React.CSSProperties}
-                    />
-                  ))}
-                </svg>
-              </div>
-            </div>
-            {/* 一句话价值主张：评委 5 秒内能建立「这是干嘛的」的认知 */}
-            <p
-              className="hero-rise mt-5 max-w-xl text-muted text-sm sm:text-base leading-relaxed"
-              style={{ "--d": "0.6s" } as React.CSSProperties}
-            >
-              AI 评委团按赛事评分标准给你的 BP 体检漏洞、模拟答辩逐题追问——把你第一次被问倒，提前到赛前。
-            </p>
           </div>
 
-          {/* 底部：引文 + 双胶囊按钮（品牌行居中于按钮上方） */}
-          <div className="pb-10 flex flex-wrap gap-x-10 gap-y-6 items-end justify-end relative">
+          {/* 中下：双胶囊按钮 */}
+          <div className="mt-[27dvh] md:mt-[25dvh] flex flex-wrap gap-x-10 gap-y-6 items-end justify-center relative">
             <div className="hero-rise flex flex-col items-center gap-3" style={{ "--d": "0.8s" } as React.CSSProperties}>
               <div className="flex flex-wrap items-start gap-3">
               <div className="flex flex-col items-center gap-2.5">

@@ -6,7 +6,6 @@ import { SiteNav } from "@/components/site-nav";
 import { UserMenu } from "@/components/user-menu";
 import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
-import "./jelly-radio.css";
 
 // 中文正文/标题走系统字体栈（globals.css）：Noto Serif/Sans SC 需要在构建期从
 // fonts.googleapis.com 拉取 203 个 woff2（约 11MB），国内服务器构建必失败并静默
