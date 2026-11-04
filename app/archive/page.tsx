@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import StrokeText from "@/components/StrokeText";
 import { COMPETITIONS, PERSONAS } from "@/lib/knowledge";
 import { useDataLayer, hasLocalData, alreadyMigrated, importLocalToCloud } from "@/lib/data-layer";
 import { useDialog } from "@/lib/use-dialog";
@@ -222,7 +223,28 @@ export default function ArchivePage() {
       <div className="border-b-2 border-pine pb-5 mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs text-muted tracking-widest mb-1">训练档案 · P5</p>
-          <h1 className="font-serif font-bold text-3xl">成长，要看得见才作数</h1>
+          <h1>
+            <StrokeText
+              text="成长，要看得见才作数"
+              className="stroke-text--start"
+              strokeColor="#161613"
+              fillColor="#161613"
+              fontFamily="var(--font-serif)"
+              fontWeight={700}
+              fontSize={30}
+              letterSpacing={0}
+              strokeWidth={1}
+              strokeStyle="solid"
+              drawDuration={1.1}
+              fillDelay={0.15}
+              stagger={0.05}
+              ease="power2.out"
+              trigger="mount"
+              fillMode="wipe"
+              wipeFrom="left"
+              hoverRedraw
+            />
+          </h1>
         </div>
         <div className="flex items-center gap-3 no-print">
           <button

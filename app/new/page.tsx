@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Stepper, { Step } from "@/components/Stepper";
+import StrokeText from "@/components/StrokeText";
 import mammoth from "mammoth";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS } from "@/lib/knowledge";
@@ -129,7 +130,28 @@ export default function NewSessionPage() {
       <Link href="/" className="text-sm text-muted hover:text-ink transition-colors">
         ← 返回首页
       </Link>
-      <h1 className="font-serif font-bold text-3xl mt-5 mb-6">新建一场训练</h1>
+      <h1 className="mt-5 mb-4">
+        <StrokeText
+          text="新建一场训练"
+          className="stroke-text--start"
+          strokeColor="#161613"
+          fillColor="#161613"
+          fontFamily="var(--font-serif)"
+          fontWeight={700}
+          fontSize={30}
+          letterSpacing={0}
+          strokeWidth={1}
+          strokeStyle="solid"
+          drawDuration={1.1}
+          fillDelay={0.15}
+          stagger={0.05}
+          ease="power2.out"
+          trigger="mount"
+          fillMode="wipe"
+          wipeFrom="left"
+          hoverRedraw
+        />
+      </h1>
 
       <div className="bg-card border border-line rounded-3xl p-6 lg:p-8">
         <Stepper
