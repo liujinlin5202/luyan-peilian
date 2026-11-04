@@ -1,0 +1,219 @@
+// 评委 Agent —— 技术方案 §3.3 + 附录 B：三种人设 × 两档难度，多轮追问，逐题打分
+// 全程只提问 + 简短评语，绝不替用户回答；红线写进提示词
+
+import { NextResponse } from "next/server";
+import { chatJSON, hasApiKey } from "@/lib/ai";
+import { COMPETITIONS, MODES, PERSONAS, QUESTION_BANK } from "@/lib/knowledge";
+import type { DiagnosisReport, JudgeHistoryItem, JudgeTurn, Persona } from "@/lib/types";
+
+export const runtime = "nodejs";
+
+interface Body {
+  competition: keyof typeof COMPETITIONS;
+  bp_summary: string;
+  bp_text: string;
+  diagnosis?: DiagnosisReport | null;
+  mode: "normal" | "hell";
+  persona: Persona;
+  phase: "start" | "answer" | "switch";
+  asked: JudgeHistoryItem[]; // 已完成的问答（含追问），用于去重与上下文
+  user_answer?: string; // phase=answer 时：用户对 pending_question 的回答
+  pending_question?: string; // phase=answer 时：等待回答的问题
+}
+
+const ROUND_LIMIT = { normal: 9, hell: 10 } as const;
+
+export async function POST(req: Request) {
+  const body = (await req.json()) as Body;
+  const config = COMPETITIONS[body.competition] ?? COMPETITIONS.opc;
+  const rounds = body.asked.length;
+  const limit = ROUND_LIMIT[body.mode] ?? 9;
+
+  // 结束条件：达到题数上限（技术方案 §3.3）
+  if (body.phase === "answer" && rounds >= limit) {
+    return NextResponse.json({
+      score: scoreAnswer(body.user_answer ?? ""),
+      comment: "时间关系，训练到此。去复盘页看看你的漏洞清单。",
+      action: "end",
+      question: "本场陪练结束。带上漏洞清单，去补齐后再来。",
+    } satisfies JudgeTurn);
+  }
+
+  if (!hasApiKey()) return NextResponse.json(mockTurn(body, limit));
+
+  const persona = PERSONAS[body.persona];
+  const mode = MODES[body.mode];
+  const weaknesses = body.diagnosis?.weaknesses ?? [];
+  const askedQs = body.asked.map((a) => a.question);
+
+  // 出题弹药：60% 锚定诊断弱点 + 40% 知识库高频题（技术方案 §3.3）
+  const bankPool = QUESTION_BANK.filter(
+    (b) => (b.comps === "all" || b.comps.includes(body.competition)) && !askedQs.includes(b.q)
+  )
+    .slice(0, 18)
+    .map((b) => `【${b.dimension}】${b.q}（可追问：${b.followup}）`)
+    .join("\n");
+
+  const transcript = body.asked
+    .map((a) => `评委：${a.question}\n选手：${a.answer || "（未作答）"}${a.score ? `（评分 ${a.score}/5${a.comment ? `，评语：${a.comment}` : ""}）` : ""}`)
+    .join("\n\n");
+
+  const system = `你是双创大赛路演答辩现场的评委，正在对一支学生团队进行模拟答辩训练。${persona.brief}
+
+## 人设
+你是：${persona.label}。始终保持这一人设的提问视角，不越界问其他人设的专属领域。
+
+## 难度
+${mode.label}：${mode.rule}
+
+## 项目背景（${config.name}）
+BP 摘要：${body.bp_summary || "（无摘要，参考 BP 原文）"}
+诊断报告发现的弱点（优先围绕这些定向出题）：
+${weaknesses.map((w, i) => `${i + 1}. ${w.point}（可切入的问题：${w.expect_question}）`).join("\n") || "（无诊断报告，按通用维度出题）"}
+
+## 高频提问库（可选弹药，禁止照搬已问题）
+${bankPool || "（自由出题）"}
+
+## 出题策略
+- 约 60% 的题锚定上面弱点清单（用户还没补的洞优先），40% 来自高频题库或你基于 BP 的专业判断。
+- 绝不出与本项目无关的题；绝不重复已问过的问题（逐字或换说法重复都不行）。
+
+## 红线（违反即失败）
+1. 不编造 BP 中不存在的细节——质疑只能针对 BP 已写内容或其回答内容。
+2. 质疑针对方案本身，绝不针对人格；保持职业尊严。
+3. 永远不替用户回答，不给建议，不总结——你只提问和给一句评语。
+4. 每次只问一个问题，问题要具体、可回答。
+
+## 已完成的问答记录
+${transcript || "（本场刚开始）"}
+
+## 输出 JSON Schema（严格 JSON，无其他内容）
+{
+  "score": 1-5 整数或 null（仅当本次用户刚提交了回答时给分；开场/切人设为 null），
+  "comment": "对上一条回答的评语，≤40 字，先扬后抑或直接点破",
+  "action": "followup | next | end",
+  "question": "追问 / 下一题 / 结束语"
+}
+评分标准：5=直击要害有数据；4=回答完整有依据；3=答了但空泛；2=勉强沾边；1=回避/答非所问。
+已问 ${rounds} 题，上限约 ${limit} 题。接近上限或用户连续答不上时选 end，question 给一句收尾。`;
+
+  let user = "";
+  if (body.phase === "start") {
+    user = "本场刚开始，请提出第一题。可以先用一句简短开场白（评委自我介绍式）再抛出第一个具体问题，把开场白并入 question 字段。";
+  } else if (body.phase === "switch") {
+    user = `你刚接管提问（前一位评委的题已完成）。用一句话表明你的视角切换（如「我换个角度」），然后提出你人设下的下一个问题。不给分（score 为 null）。`;
+  } else {
+    user = `用户对「${body.pending_question}」的回答是：\n${body.user_answer}\n\n请给这一条回答打分并给评语，然后决定：追问（followup，写出追问）、下一题（next，写出新题）、还是结束（end，给收尾语）。`;
+  }
+
+  try {
+    const turn = (await chatJSON(system, user, { maxTokens: 800, temperature: 0.5 })) as JudgeTurn;
+    return NextResponse.json({
+      score: turn.score ?? null,
+      comment: String(turn.comment ?? "").slice(0, 60),
+      action: ["followup", "next", "end"].includes(turn.action) ? turn.action : "next",
+      question: String(turn.question ?? "").slice(0, 300),
+    } satisfies JudgeTurn);
+  } catch (e) {
+    console.error("[judge] fallback to mock:", e);
+    return NextResponse.json({ ...mockTurn(body, limit), mock: true });
+  }
+}
+
+// ---- 演示模式：脚本化评委（明确标记 mock）----
+function mockTurn(body: Body, limit: number): JudgeTurn {
+  const askedQs = new Set(body.asked.map((a) => a.question));
+  const pool = QUESTION_BANK.filter(
+    (b) => (b.comps === "all" || b.comps.includes(body.competition)) && !askedQs.has(b.q)
+  );
+  const weaknesses = body.diagnosis?.weaknesses ?? [];
+
+  const pickQuestion = (idx: number): { q: string; fromWeakness: boolean } => {
+    // 60% 概率走弱点清单（换说法切入），40% 走题库
+    const w = weaknesses[idx % Math.max(1, weaknesses.length)];
+    if (w && idx % 5 < 3) return { q: w.expect_question || w.point, fromWeakness: true };
+    const b = pool[idx % Math.max(1, pool.length)];
+    return { q: b ? b.q : "用 30 秒把你们项目的核心价值再讲一遍。", fromWeakness: false };
+  };
+
+  if (body.phase === "start") {
+    const first = pickQuestion(0);
+    return {
+      score: null,
+      comment: "",
+      action: "next",
+      question: `${PERSONAS[body.persona].label}视角，开始提问。${first.q}`,
+    };
+  }
+
+  if (body.phase === "switch") {
+    const next = pickQuestion(body.asked.length);
+    return {
+      score: null,
+      comment: "",
+      action: "next",
+      question: `好，我换个角度接着问。${next.q}`,
+    };
+  }
+
+  const answer = body.user_answer ?? "";
+  const score = scoreAnswer(answer);
+  const idx = body.asked.length;
+
+  if (idx >= limit) {
+    return { score, comment: "训练到此为止，去看复盘。", action: "end", question: "本场结束，带上漏洞清单去补齐。" };
+  }
+
+  // 连续低分 → 建议结束（技术方案 §3.3 结束条件）
+  const lastTwo = body.asked.slice(-2);
+  const consecutiveLow = score <= 2 && lastTwo.filter((a) => (a.score ?? 3) <= 2).length >= 1;
+
+  if (score <= 2 && !consecutiveLow && idx % 2 === 1) {
+    const b = pool[idx % Math.max(1, pool.length)];
+    return {
+      score,
+      comment: LOW_COMMENTS[idx % LOW_COMMENTS.length],
+      action: "followup",
+      question: b?.followup ?? "我追问一句：能再具体一点吗？给个数字或例子。",
+    };
+  }
+
+  const next = pickQuestion(idx);
+  const goodAnswer = score >= 4;
+  return {
+    score,
+    comment: goodAnswer
+      ? GOOD_COMMENTS[idx % GOOD_COMMENTS.length]
+      : COMMENTS[(score + idx) % COMMENTS.length],
+    action: consecutiveLow ? "end" : "next",
+    question: consecutiveLow ? "今天先到这里。把答不上的题带去复盘，一个一个补。" : next.q,
+  };
+}
+
+function scoreAnswer(answer: string): number {
+  const len = answer.trim().length;
+  if (len === 0) return 1;
+  const hasNumber = /\d/.test(answer);
+  if (len >= 120 && hasNumber) return 5;
+  if (len >= 60) return hasNumber ? 4 : 3;
+  if (len >= 25) return 3;
+  return 2;
+}
+
+const COMMENTS = [
+  "回答有内容，但还差一个可验证的依据。",
+  "方向对，深度不够，再往下挖一层才算数。",
+  "这个回答评委大概率会继续追问，先自己补牢。",
+  "有数据意识，继续保持这个答法。",
+  "答得稳，但注意别绕开问题的核心。",
+];
+const LOW_COMMENTS = [
+  "这个回答太空了，评委会当场打断你。",
+  "你在回避问题的核心，再来一次。",
+  "没有数据支撑的说法，说服力为零。",
+];
+const GOOD_COMMENTS = [
+  "有数据有逻辑，这个答法评委会记住。",
+  "答得扎实，证据意识很好。",
+  "直接回应了要害，稳。",
+];

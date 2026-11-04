@@ -1,26 +1,245 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* 美术馆色系：暖灰纸面 + 近黑主色 + 电光蓝点睛（呼应参考：超大字 × 编织体） */
+  --color-paper: #eceae5;
+  --color-card: #f7f6f2;
+  --color-ink: #161613;
+  --color-pine: #1c1c1a; /* 令牌名保留（全站深色块），色值换为近黑 */
+  --color-pinedeep: #0b0b0a;
+  --color-copper: #2b46ff; /* 令牌名保留（全站强调色），色值换为点睛蓝 */
+  --color-copperbright: #4d63ff;
+  --color-line: #d8d5cd;
+  --color-muted: #6d6c66;
+  --color-crimson: #b3261e;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-serif: var(--font-noto-serif-sc), "Songti SC", serif;
+  --font-sans: var(--font-noto-sans-sc), "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* 手机端：iOS 对字号 <16px 的表单控件聚焦时会强制缩放页面，统一提到 16px 避免跳动 */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+::selection {
+  background: rgba(43, 70, 255, 0.18);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-copper);
+  outline-offset: 2px;
+}
+
+/* 列表卡片悬停：轻微上浮 + 投影 */
+.card-hover {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(22, 22, 19, 0.1);
+  border-color: rgba(22, 22, 19, 0.4);
+}
+
+/* 计分条动画 */
+@keyframes grow-bar {
+  from {
+    width: 0;
+  }
+}
+.bar-fill {
+  animation: grow-bar 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fade-up {
+  animation: fade-up 0.35s ease both;
+}
+
+@keyframes blink-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+.thinking-dot {
+  animation: blink-dot 1.2s infinite;
+}
+.thinking-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.thinking-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* 细节纹理：纸面横线，避免大面积纯色的廉价感 */
+.paper-texture {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 31px,
+    rgba(22, 22, 19, 0.04) 31px,
+    rgba(22, 22, 19, 0.04) 32px
+  );
+}
+
+/* ===== 首页开屏（美术馆风）：文字升起 × 编织体逐笔画出 ===== */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes weave-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes weave-float {
+  from {
+    transform: rotate(0deg) translateY(0);
+  }
+  to {
+    transform: rotate(-3deg) translateY(-10px);
+  }
+}
+/* hello 气球：透明渐变字缓慢漂浮 */
+@keyframes hello-float {
+  from {
+    transform: rotate(-5deg) translateY(0) scale(1);
+  }
+  to {
+    transform: rotate(4deg) translateY(-16px) scale(1.03);
+  }
+}
+/* 光束：逐束画出 + 流光脉冲 */
+@keyframes beam-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes beam-flow {
+  to {
+    stroke-dashoffset: -690;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-rise {
+    animation: hero-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--d, 0s);
+  }
+  /* 大脑线稿：逐笔描边（--i 为笔画序号），dash 值需大于最长路径长度 */
+  .weave path {
+    stroke-dasharray: 900;
+    stroke-dashoffset: 900;
+    animation: weave-draw 1s cubic-bezier(0.4, 0.2, 0.3, 1) forwards;
+    animation-delay: calc(var(--i, 0) * 40ms + 0.3s);
+  }
+  .weave-float {
+    animation: weave-float 7s 1.9s ease-in-out infinite alternate;
+  }
+  .hello-float {
+    animation: hello-float 9s 2s ease-in-out infinite alternate;
+  }
+  /* 光束：细束逐条画出（--i 序号错峰），虚线脉冲持续流动 */
+  .beam-draw {
+    stroke-dasharray: 1400;
+    stroke-dashoffset: 1400;
+    animation: beam-draw 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: calc(var(--i, 0) * 90ms + 0.2s);
+  }
+  .beam-flow {
+    stroke-dasharray: 70 620;
+    animation: beam-flow 7s 1.6s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weave path {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* 打印 / 存为 PDF：隐藏导航与交互控件，白底黑字 */
+@media print {
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .bg-card,
+  .border-line {
+    border-color: #ccc !important;
+    background: #fff !important;
+  }
+}
+
+/* 胶囊舱外红点小球：小幅上跳（起跳快、下落缓） */
+@keyframes dot-jump {
+  0%, 100% { transform: translateY(0); animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1); }
+  50% { transform: translateY(-7px); animation-timing-function: cubic-bezier(0.55, 0, 0.75, 0.45); }
+}
+.dot-jump {
+  animation: dot-jump 1.15s ease-in-out infinite;
+}
+
+/* 操作指引弹层：背景淡入 */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.fade-in {
+  animation: fade-in 0.25s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dot-jump {
+    animation: none;
+  }
 }
