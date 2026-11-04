@@ -13,8 +13,9 @@
   --color-muted: #6d6c66;
   --color-crimson: #b3261e;
 
-  --font-serif: var(--font-noto-serif-sc), "Songti SC", serif;
-  --font-sans: var(--font-noto-sans-sc), "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* 系统中文字体栈：不依赖构建期在线拉取的 Google 字体（国内服务器 fonts.googleapis.com 不通会静默退化） */
+  --font-serif: "Songti SC", "STSong", "SimSun", "Noto Serif CJK SC", serif;
+  --font-sans: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
 }
 
 body {

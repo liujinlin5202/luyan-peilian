@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Noto_Sans_SC, Noto_Serif_SC, Pacifico } from "next/font/google";
+import { Pacifico } from "next/font/google";
 import SiteFooter from "./site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { UserMenu } from "@/components/user-menu";
@@ -8,18 +8,9 @@ import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 import "./jelly-radio.css";
 
-const serif = Noto_Serif_SC({
-  subsets: ["latin"],
-  weight: ["600", "700", "900"],
-  variable: "--font-noto-serif-sc",
-  display: "swap",
-});
-const sans = Noto_Sans_SC({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-noto-sans-sc",
-  display: "swap",
-});
+// 中文正文/标题走系统字体栈（globals.css）：Noto Serif/Sans SC 需要在构建期从
+// fonts.googleapis.com 拉取 203 个 woff2（约 11MB），国内服务器构建必失败并静默
+// 退化为系统字体。只保留体积极小的 Pacifico（仅拉丁字符、1 个文件）做手写点缀。
 const script = Pacifico({
   subsets: ["latin"],
   weight: "400",
@@ -35,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN" className={`${serif.variable} ${sans.variable} ${script.variable}`}>
+    <html lang="zh-CN" className={`${script.variable}`}>
       <body className="min-h-dvh flex flex-col relative">
         <AuthProvider>
         <header className="text-ink absolute top-0 left-0 right-0 z-20">

@@ -14,14 +14,15 @@ export function AIBadge({ className = "" }: { className?: string }) {
   );
 }
 
-export function MockBanner() {
+export function MockBanner({ reason }: { reason?: "nokey" | "degraded" }) {
+  const detail =
+    reason === "degraded"
+      ? "：AI 服务暂时不可用（网络/额度异常），已降级为内置模拟数据。恢复后刷新页面即为真实 AI 评委。"
+      : "：未检测到 AI Key，当前为内置模拟数据。在项目根目录 .env.local 配置 DEEPSEEK_API_KEY 并重启后，即为真实 AI 诊断与评委。";
   return (
     <div className="border border-copper/40 bg-copper/10 text-ink text-sm px-4 py-3 rounded-md mb-6">
       <strong className="text-copper font-semibold">演示模式</strong>
-      <span className="text-muted">
-        ：未检测到 AI Key，当前为内置模拟数据。在项目根目录 .env.local 配置 DEEPSEEK_API_KEY
-        并重启后，即为真实 AI 诊断与评委。
-      </span>
+      <span className="text-muted">{detail}</span>
     </div>
   );
 }

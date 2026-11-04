@@ -14,6 +14,9 @@ export function getClient(): OpenAI {
     client = new OpenAI({
       apiKey: process.env.DEEPSEEK_API_KEY,
       baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
+      // 演示现场保命：SDK 默认 10 分钟超时 + 2 次重试会把页面挂死，这里 45 秒封顶、最多重试 1 次
+      timeout: 45_000,
+      maxRetries: 1,
     });
   }
   return client;
@@ -22,7 +25,7 @@ export function getClient(): OpenAI {
 export async function chatJSON(
   system: string,
   user: string,
-  { maxTokens = 2000, temperature = 1.0 }: { maxTokens?: number; temperature?: number } = {}
+  { maxTokens = 2000, temperature = 0.5 }: { maxTokens?: number; temperature?: number } = {}
 ): Promise<unknown> {
   const res = await getClient().chat.completions.create({
     model: process.env.DEEPSEEK_MODEL || "deepseek-chat",

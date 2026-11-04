@@ -91,7 +91,9 @@ export interface JudgeTurn {
   comment: string; // ≤40 字评语
   action: "followup" | "next" | "end";
   question: string; // 追问 / 下一题 / 结束语
+  target?: string; // 出题依据（「漏洞#N」/「弱点N」/「高频题库·维度名」/「自由」），UI 可见化 60% 定向打弱点
   mock?: boolean;
+  mock_reason?: "nokey" | "degraded"; // nokey=未配置 Key；degraded=AI 调用失败降级
 }
 
 // ---- 复盘 Agent 输出 ----

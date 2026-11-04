@@ -468,7 +468,7 @@ export default function HomePage() {
               </div>
 
               <p className="text-xs text-muted mt-8 border-t border-line pt-4">
-                提示：BP 与训练记录仅存于你的浏览器本地，不会上传服务器；同一队伍名称请跨场次保持一致，漏洞追踪才能接得上。
+                提示：BP 与训练记录保存在你的浏览器本地（登录后存云端档案），诊断与陪练时仅临时调用 AI 服务生成结果，服务器不做存储、不复用你的内容；同一队伍名称请跨场次保持一致，漏洞追踪才能接得上。
               </p>
             </div>
           </div>

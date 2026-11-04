@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AIBadge, MockBanner } from "@/components/ui";
 import { RadarChart, ScoreBars } from "@/components/scores";
+import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS } from "@/lib/knowledge";
 import { useDataLayer } from "@/lib/data-layer";
 import type { QARecord, ReviewReport, Session, WeaknessItem, WeaknessStatus } from "@/lib/types";
@@ -33,6 +34,8 @@ export default function ReviewPage() {
   const [records, setRecords] = useState<QARecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fatal, setFatal] = useState(false); // 场次不存在/无记录这类不可重试错误
+  const [retryNonce, setRetryNonce] = useState(0);
   const [prevScore, setPrevScore] = useState<number | undefined>();
   const [verdicts, setVerdicts] = useState<Record<number, WeaknessStatus>>({});
   const [pastItems, setPastItems] = useState<WeaknessItem[]>([]);
@@ -51,6 +54,7 @@ export default function ReviewPage() {
         const s = await layer.session.get(id);
         if (!s) {
           setLoading(false);
+          setFatal(true);
           setError("训练场次不存在");
           return;
         }
@@ -67,19 +71,22 @@ export default function ReviewPage() {
 
         // 上一场答辩表现分（同量纲对比：取上一场复盘的维度分之和，而非 BP 诊断分）
         const prev = await layer.session.prevReviewed(s.team_id, id);
-        setPrevScore(prev ? prev.review!.dimension_scores.reduce((acc, d) => acc + d.score, 0) : undefined);
+        const prevTotal = prev?.review?.dimension_scores.reduce((acc, d) => acc + d.score, 0);
+        setPrevScore(prevTotal);
 
         if (s.review) {
           setReview(s.review);
         } else if (records.length) {
           const res = await fetch("/api/review", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...demoTokenHeaders },
+            // 复盘输出 6000 tokens，给到 90 秒：低于它会在慢 key 下误杀正常请求
+            signal: AbortSignal.timeout(90_000),
             body: JSON.stringify({
               competition: s.competition,
               bp_summary: s.bp_summary,
               diagnosis_overall: s.overall_score,
-              prev_score: prev?.overall_score,
+              prev_score: prevTotal, // 与页面 delta 同源：上一场复盘维度分之和
               records: records.map((r) => ({
                 round: r.round,
                 question: r.question,
@@ -96,6 +103,7 @@ export default function ReviewPage() {
           setReview(data);
           await layer.session.update(id, { review: data, status: "reviewed" });
         } else {
+          setFatal(true);
           setError("本场没有问答记录，无法复盘。");
         }
       } catch (e) {
@@ -104,7 +112,15 @@ export default function ReviewPage() {
         setLoading(false);
       }
     })();
-  }, [id, layer]);
+  }, [id, layer, retryNonce]);
+
+  // 复盘失败重试（网络/接口类错误；场次不存在等 fatal 错误不显示此按钮）
+  function retryReview() {
+    reviewedRef.current = false;
+    setError("");
+    setLoading(true);
+    setRetryNonce((n) => n + 1);
+  }
 
   const confirmedCount = Object.keys(verdicts).length;
 
@@ -212,9 +228,19 @@ export default function ReviewPage() {
     return (
       <div className="mx-auto max-w-3xl px-5 py-24 text-center">
         <p className="font-serif text-2xl mb-3">{error || "复盘报告不存在"}</p>
-        <Link href="/" className="text-pine underline underline-offset-4">
-          新建一场训练
-        </Link>
+        <div className="flex items-center justify-center gap-5">
+          {!fatal && (
+            <button onClick={retryReview} className="bg-pine text-paper font-bold px-5 py-2.5 hover:bg-pinedeep transition-colors">
+              重试复盘
+            </button>
+          )}
+          <Link href={`/practice/${id}`} className="text-pine underline underline-offset-4">
+            返回本场陪练
+          </Link>
+          <Link href="/" className="text-muted underline underline-offset-4">
+            新建一场训练
+          </Link>
+        </div>
       </div>
     );
   }

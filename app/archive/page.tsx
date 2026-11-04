@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { COMPETITIONS, PERSONAS } from "@/lib/knowledge";
 import { useDataLayer, hasLocalData, alreadyMigrated, importLocalToCloud } from "@/lib/data-layer";
-import type { Session, Team, WeaknessItem } from "@/lib/types";
+import type { QARecord, Session, Team, WeaknessItem } from "@/lib/types";
 
 const STATUS_LABEL: Record<string, string> = {
   diagnosed: "已诊断",
@@ -30,6 +30,7 @@ export default function ArchivePage() {
   const [stats, setStats] = useState({ total: 0, closed: 0, rate: 0 });
   const [importState, setImportState] = useState<"idle" | "busy" | "done" | "error">("idle");
   const [importMsg, setImportMsg] = useState("");
+  const [backupMsg, setBackupMsg] = useState("");
 
   const showImport = layer?.kind === "cloud" && hasLocalData() && !alreadyMigrated();
 
@@ -130,6 +131,84 @@ export default function ArchivePage() {
     });
   }
 
+  // ---- 备份 / 恢复（断网兜底：不用在评委面前开控制台贴脚本）----
+  async function exportBackup() {
+    if (!layer) return;
+    try {
+      const [ts, ss] = await Promise.all([layer.team.list(), layer.session.list()]);
+      const qa: Record<string, QARecord[]> = {};
+      for (const s of ss) qa[s.session_id] = await layer.qa.listBySession(s.session_id);
+      const wk: Record<string, WeaknessItem[]> = {};
+      for (const t of ts) wk[t.team_id] = await layer.weakness.listByTeam(t.team_id);
+      const payload = {
+        version: 1,
+        kind: layer.kind,
+        exported_at: new Date().toISOString(),
+        teams: ts,
+        sessions: ss,
+        qa,
+        weaknesses: wk,
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 1)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `赛前模拟舱备份-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      setBackupMsg("备份已下载（含 BP 全文与全部训练记录），请妥善保存。");
+    } catch (e) {
+      setBackupMsg(e instanceof Error ? e.message : "导出失败，请重试");
+    }
+  }
+
+  async function importBackup(file: File) {
+    if (!layer) return;
+    if (layer.kind !== "local") {
+      setBackupMsg("导入仅支持本地模式（未登录状态）；云端数据请用「一键导入云端」。");
+      return;
+    }
+    let data: {
+      teams?: Team[];
+      sessions?: Session[];
+      qa?: Record<string, QARecord[]>;
+      weaknesses?: Record<string, WeaknessItem[]>;
+    };
+    try {
+      data = JSON.parse(await file.text());
+    } catch {
+      setBackupMsg("文件不是合法的备份 JSON。");
+      return;
+    }
+    if (!data?.teams?.length && !data?.sessions?.length) {
+      setBackupMsg("备份文件里没有可导入的数据。");
+      return;
+    }
+    if (!confirm("导入会把这些团队/场次/问答/漏洞合并写回本机档案（同 ID 数据会覆盖）。继续？")) return;
+    try {
+      const teamMap: Record<string, string> = {};
+      for (const t of data.teams ?? []) {
+        const nt = await layer.team.ensure(t.name); // 按名去重，已有同名团队不会重复建
+        teamMap[t.team_id] = nt.team_id;
+      }
+      for (const s of data.sessions ?? []) {
+        await layer.session.create({ ...s, team_id: teamMap[s.team_id] ?? s.team_id });
+      }
+      for (const rows of Object.values(data.qa ?? {})) {
+        for (const r of rows) await layer.qa.add(r);
+      }
+      for (const rows of Object.values(data.weaknesses ?? {})) {
+        for (const w of rows) await layer.weakness.add({ ...w, team_id: teamMap[w.team_id] ?? w.team_id });
+      }
+      const [ts, ss] = await Promise.all([layer.team.list(), layer.session.list()]);
+      setTeams(ts);
+      setSessions(ss);
+      setActiveTeam(ts[0]?.team_id ?? "");
+      setBackupMsg("导入完成，档案已恢复。");
+    } catch (e) {
+      setBackupMsg(e instanceof Error ? e.message : "导入失败，请重试");
+    }
+  }
+
   if (!ready) return null;
 
   const trend = teamSessions.filter((s) => s.overall_score != null);
@@ -137,10 +216,37 @@ export default function ArchivePage() {
 
   return (
     <div className="mx-auto max-w-5xl px-5 pt-24 pb-10">
-      <div className="border-b-2 border-pine pb-5 mb-8">
-        <p className="text-xs text-muted tracking-widest mb-1">训练档案 · P5</p>
-        <h1 className="font-serif font-bold text-3xl">成长，要看得见才作数</h1>
+      <div className="border-b-2 border-pine pb-5 mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs text-muted tracking-widest mb-1">训练档案 · P5</p>
+          <h1 className="font-serif font-bold text-3xl">成长，要看得见才作数</h1>
+        </div>
+        <div className="flex items-center gap-3 no-print">
+          <button
+            onClick={exportBackup}
+            disabled={!layer}
+            className="text-sm border border-pine text-pine px-4 py-2 hover:bg-pine hover:text-paper transition-colors disabled:opacity-40"
+          >
+            导出备份
+          </button>
+          {layer?.kind === "local" && (
+            <label className="text-sm border border-line text-muted px-4 py-2 hover:border-pine hover:text-pine transition-colors cursor-pointer">
+              导入备份
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) importBackup(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          )}
+        </div>
       </div>
+      {backupMsg && <p className="text-xs text-muted mb-4">{backupMsg}</p>}
 
       {teams.length === 0 ? (
         <div className="text-center py-20">

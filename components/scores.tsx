@@ -59,7 +59,14 @@ export function RadarChart({ dims, size = 300 }: { dims: DimensionScore[]; size?
     dims.map((_, i) => `${i ? "L" : "M"}${px(i, R * f(i)).toFixed(1)},${py(i, R * f(i)).toFixed(1)}`).join(" ") + " Z";
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ maxWidth: size }} role="img" aria-label="五维评分雷达图">
+    <svg
+      // viewBox 四周扩出标签安全区：五/七字维度名换行后也不再被裁切（report 页 300 / review 页 230 都验证过余量）
+      viewBox={`-20 -16 ${size + 40} ${size + 32}`}
+      width="100%"
+      style={{ maxWidth: size + 40 }}
+      role="img"
+      aria-label="五维评分雷达图"
+    >
       {/* 网格环 */}
       {[0.25, 0.5, 0.75, 1].map((f) => (
         <path key={f} d={ringPath(f)} fill="none" stroke="#ddd6c4" strokeWidth="1" />
@@ -76,17 +83,28 @@ export function RadarChart({ dims, size = 300 }: { dims: DimensionScore[]; size?
         const y = py(i, R * Math.max(0.05, d.score / d.max));
         return <circle key={i} cx={x} cy={y} r="3.5" fill="#b07a2a" stroke="#fffdf8" strokeWidth="1.5" />;
       })}
-      {/* 维度名与得分 */}
+      {/* 维度名与得分：超过 4 字的名字折成两行，避免横向溢出画布 */}
       {dims.map((d, i) => {
+        const a = angle(i);
         const lx = px(i, R + 26);
         const ly = py(i, R + 26);
-        const anchor = Math.abs(Math.cos(angle(i))) < 0.3 ? "middle" : Math.cos(angle(i)) > 0 ? "start" : "end";
+        const anchor = Math.abs(Math.cos(a)) < 0.3 ? "middle" : Math.cos(a) > 0 ? "start" : "end";
+        const name = d.name;
+        const twoLine = name.length > 4;
+        const mid = twoLine ? Math.ceil(name.length / 2) : name.length;
+        const line1 = name.slice(0, mid);
+        const line2 = twoLine ? name.slice(mid) : "";
         return (
           <g key={`l${i}`}>
-            <text x={lx} y={ly - 4} textAnchor={anchor} fontSize="12" fontWeight="600" fill="#211f19">
-              {d.name}
+            <text x={lx} y={line2 ? ly - 16 : ly - 4} textAnchor={anchor} fontSize="12" fontWeight="600" fill="#211f19">
+              {line1}
             </text>
-            <text x={lx} y={ly + 11} textAnchor={anchor} fontSize="11" fill="#6f6a5c">
+            {line2 && (
+              <text x={lx} y={ly - 2} textAnchor={anchor} fontSize="12" fontWeight="600" fill="#211f19">
+                {line2}
+              </text>
+            )}
+            <text x={lx} y={line2 ? ly + 14 : ly + 11} textAnchor={anchor} fontSize="11" fill="#6f6a5c">
               {d.score}/{d.max}
             </text>
           </g>

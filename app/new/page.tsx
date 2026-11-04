@@ -1,14 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Stepper, { Step } from "@/components/Stepper";
+import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS } from "@/lib/knowledge";
 import { useDataLayer } from "@/lib/data-layer";
 import type { CompetitionId, DiagnosisReport, JudgeMode, Persona } from "@/lib/types";
 
 const fieldCls =
   "w-full border border-line bg-paper px-3 py-2.5 text-sm outline-none focus:border-copper transition-colors";
+
+// 诊断等待期间的阶段轮播：演示时间线上最大单点冷场窗口的兜底
+const DIAGNOSE_PHASES = [
+  "正在解析 BP 结构……",
+  "正在对照赛事评分标准……",
+  "正在逐维度测算得分……",
+  "正在整理漏洞与追问清单……",
+];
 
 export default function NewSessionPage() {
   const router = useRouter();
@@ -21,6 +30,14 @@ export default function NewSessionPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!busy) return;
+    setElapsed(0);
+    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [busy]);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -48,7 +65,8 @@ export default function NewSessionPage() {
       if (!layer) throw new Error("数据层初始化中，请重试");
       const res = await fetch("/api/diagnose", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...demoTokenHeaders },
+        signal: AbortSignal.timeout(60_000),
         body: JSON.stringify({ bp_text: bpText, competition }),
       });
       const data = (await res.json()) as { error?: string } & DiagnosisReport;
@@ -196,7 +214,7 @@ export default function NewSessionPage() {
                 <div className="grid grid-cols-2 gap-3">
                   {(
                     [
-                      ["normal", "普通模式", "8-12 题 · 追问一层 · 建立信心"],
+                      ["normal", "普通模式", "约 8-9 题 · 追问一层 · 建立信心"],
                       ["hell", "地狱模式", "追问到底 · 压力测试 · 提前排雷"],
                     ] as const
                   ).map(([v, label, desc]) => (
@@ -251,8 +269,15 @@ export default function NewSessionPage() {
           </Step>
         </Stepper>
 
+        {busy && (
+          <div className="mt-5 border border-copper/30 bg-copper/5 px-4 py-3 text-sm" role="status" aria-live="polite">
+            <span className="text-copper font-semibold">{DIAGNOSE_PHASES[Math.floor(elapsed / 4) % DIAGNOSE_PHASES.length]}</span>
+            <span className="text-muted text-xs ml-3">已等待 {elapsed} 秒 · 正常需要 15-40 秒，请勿关闭页面</span>
+          </div>
+        )}
+
         <p className="text-xs text-muted text-center mt-5">
-          BP 仅存于你的浏览器本地，不会上传服务器；可随时在训练档案删除。
+          BP 仅保存在你的浏览器本地；诊断与陪练时会临时调用 AI 服务生成结果，服务器不做存储、不复用你的内容；可随时在训练档案删除。
         </p>
       </div>
     </section>
