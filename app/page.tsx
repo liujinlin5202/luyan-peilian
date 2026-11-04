@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FoldText } from "@/components/fold-text";
+import WebThreads from "@/components/WebThreads";
 import { useDialog } from "@/lib/use-dialog";
 import "./fold-text.css";
 
@@ -19,102 +20,7 @@ const GUIDE_PARTS = [
   ["漏洞追踪", "上一场未解决的漏洞会带进新一场追问，复盘时标记「已关闭」即闭环"],
 ];
 
-/* 开屏编织体 ·「绞带」：单族细线（左下 → 右上），早线深沉、晚线上拱，带身自我交叉出扭结眼；1 条蓝丝线穿带。逐笔画出后缓慢摆动 */
-type WeavePath = { d: string; w: number; blue?: boolean };
-
-function weaveLerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
-}
-
-/* 一族线：t ∈ [0,1]，端点/控制点分别沿各自的 [起点,终点] 区间滑动，形成近直纹的编织带面 */
-function bandPath(
-  t: number,
-  p0: [number, number, number, number],
-  c1: [number, number, number, number],
-  c2: [number, number, number, number],
-  p3: [number, number, number, number],
-): string {
-  const f = (r: [number, number, number, number]) =>
-    `${weaveLerp(r[0], r[1], t).toFixed(1)} ${weaveLerp(r[2], r[3], t).toFixed(1)}`;
-  return `M${f(p0)} C${f(c1)} ${f(c2)} ${f(p3)}`;
-}
-
-const WEAVE_PATHS: WeavePath[] = [];
-// 单族 13 条：左下 → 右上；控制点高度与端点高度反向滑动 → 带身中段自我绞结；第 7 条为蓝丝线
-for (let i = 0; i < 13; i++) {
-  const t = i / 12;
-  WEAVE_PATHS.push({
-    d: bandPath(t, [54, 94, 142, 232], [136, 164, 202, 118], [264, 290, 214, 120], [364, 336, 64, 160]),
-    w: i === 6 ? 2 : 1.05 + (i % 2) * 0.15,
-    ...(i === 6 ? { blue: true } : {}),
-  });
-}
-
-/* 开屏背景 · 光束：三族发光细束（紫罗兰/蓝/金）在左侧交叉穿行，两端渐隐 + 柔光晕；另有两道虚线为持续流动的脉冲 */
-type Beam = { d: string; w: number; grad: "gV" | "gB" | "gG" | "gT"; flow?: boolean };
-
-function beamPath(
-  t: number,
-  A: [number, number, number, number],
-  C1: [number, number, number, number],
-  C2: [number, number, number, number],
-  B: [number, number, number, number],
-): string {
-  const f = (r: [number, number, number, number]) =>
-    `${weaveLerp(r[0], r[1], t).toFixed(1)} ${weaveLerp(r[2], r[3], t).toFixed(1)}`;
-  return `M${f(A)} C${f(C1)} ${f(C2)} ${f(B)}`;
-}
-
-const BEAMS: Beam[] = [];
-// T 族 · 青：顶部五连束（与 A 族同构，位于其上方）
-for (let i = 0; i < 5; i++) {
-  const t = i / 4;
-  BEAMS.push({
-    d: beamPath(t, [-30, -10, 40, 150], [230, 280, 30, 110], [380, 430, 150, 230], [610, 630, 230, 340]),
-    w: 1.3 + (i % 3) * 0.5,
-    grad: "gT",
-  });
-}
-// A 族 · 紫罗兰：左上 → 右下五连束（扇形展开）
-for (let i = 0; i < 5; i++) {
-  const t = i / 4;
-  BEAMS.push({
-    d: beamPath(t, [-30, -10, 140, 240], [230, 280, 130, 220], [380, 430, 310, 390], [610, 630, 370, 510]),
-    w: 1.3 + (i % 3) * 0.5,
-    grad: "gV",
-  });
-}
-// B 族 · 蓝：左上 → 右下四连束（与 A 族同向平行，位于其下方）
-for (let i = 0; i < 4; i++) {
-  const t = i / 3;
-  BEAMS.push({
-    d: beamPath(t, [-30, -10, 260, 370], [230, 290, 270, 360], [390, 440, 400, 480], [610, 630, 500, 630]),
-    w: i === 1 ? 2.2 : 1.2 + i * 0.25,
-    grad: "gB",
-  });
-}
-// C 族 · 金：近水平三连细束
-for (let i = 0; i < 3; i++) {
-  const t = i / 2;
-  BEAMS.push({
-    d: beamPath(t, [-30, -10, 420, 475], [250, 300, 410, 455], [430, 480, 490, 530], [610, 630, 540, 585]),
-    w: 0.9 + i * 0.35,
-    grad: "gG",
-  });
-}
-// 流光脉冲：沿两条路径持续流动的虚线
-BEAMS.push({
-  d: beamPath(0.4, [-30, -10, 220, 310], [230, 290, 200, 280], [390, 440, 370, 450], [610, 630, 440, 570]),
-  w: 1.1,
-  grad: "gV",
-  flow: true,
-});
-BEAMS.push({
-  d: beamPath(0.55, [-30, -10, 310, 420], [230, 290, 300, 390], [390, 440, 430, 510], [610, 630, 530, 650]),
-  w: 1,
-  grad: "gB",
-  flow: true,
-});
+/* 开屏视觉：WebThreads 曲线特效（见组件文件），替换原光束/编织体/hello 气球 */
 
 export default function HomePage() {
   const [guideOpen, setGuideOpen] = useState(false);

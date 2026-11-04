@@ -184,7 +184,7 @@ export const MODES = {
   },
 } as const;
 
-// ---- 评委高频提问库（89 题：通用 61 + OPC 定向 22 + 蓝桥杯定向 6，均带追问链）----
+// ---- 评委高频提问库（87 题：通用 61 + OPC 定向 20 + 蓝桥杯定向 6，均带追问链）----
 export interface BankQuestion {
   dimension: string;
   q: string;
