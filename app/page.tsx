@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FoldText } from "@/components/fold-text";
+import StarBorder from "@/components/StarBorder";
 import WebThreads from "@/components/WebThreads";
 import { useDialog } from "@/lib/use-dialog";
 import "./fold-text.css";
@@ -115,62 +117,80 @@ export default function HomePage() {
               </div>
           </div>
 
-          {/* 中下：双胶囊按钮 */}
-          <div className="mt-[27dvh] md:mt-[25dvh] flex flex-wrap gap-x-10 gap-y-6 items-end justify-center relative">
-            <div className="hero-rise flex flex-col items-center gap-3" style={{ "--d": "0.8s" } as React.CSSProperties}>
-              <div className="flex flex-wrap items-start gap-3">
-              <div className="flex flex-col items-center gap-2.5">
-              <a
+          {/* 中下：竖直排列的星光描边按钮组（StarBorder） */}
+          <div className="mt-[24dvh] md:mt-[22dvh] flex justify-center relative">
+            <div className="hero-rise flex flex-col items-center gap-3.5" style={{ "--d": "0.8s" } as React.CSSProperties}>
+              <StarBorder
+                as={Link}
                 href="/new"
-                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full bg-ink px-6 py-3 text-sm font-bold text-paper transition-transform duration-300 hover:-translate-y-0.5"
+                theme="dark"
+                backgroundColor="#161613"
+                textColor="#eceae5"
+                borderColor="rgba(255,255,255,0.16)"
+                color="#ffffff"
+                trailColor="#ffffff"
+                duration={6}
+                direction="clockwise"
+                stars={1}
+                trailLength={0.3}
+                thickness={1}
+                radius={999}
+                glow={0.7}
+                hover="lap"
+                sparkle
+                clickPulse
+                className="!w-[220px] !justify-center !py-4 !text-[15px] !font-bold"
               >
-                <span className="relative z-10 transition-colors duration-500 group-hover:text-ink">
-                  开始新训练
-                </span>
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 18 18"
-                  fill="none"
-                  className="relative z-10 transition-all duration-300 group-hover:translate-x-1 group-hover:text-ink"
-                  aria-hidden="true"
-                >
+                开始新训练
+                <svg width="15" height="15" viewBox="0 0 18 18" fill="none" aria-hidden="true">
                   <path d="M5 5l8 8M13 6.5V13H6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                <span
-                  className="absolute inset-0 z-0 origin-left scale-0 rounded-full bg-paper transition-transform duration-500 ease-out group-hover:scale-100"
-                  aria-hidden="true"
-                />
-              </a>
-                {/* 胶囊舱外 · 黑球队列，中间红球小幅上跳 */}
-                <div className="flex items-center gap-2.5" aria-hidden="true">
-                  {Array.from({ length: 7 }).map((_, i) =>
-                    i === 3 ? (
-                      <span key={i} className="dot-jump block h-3 w-3 rounded-full bg-[#e05252]" />
-                    ) : (
-                      <span key={i} className="block h-2.5 w-2.5 rounded-full bg-ink/80" />
-                    ),
-                  )}
-                </div>
-              </div>
-              <a
+              </StarBorder>
+              <StarBorder
+                as={Link}
                 href="/archive"
-                className="group relative inline-flex items-center overflow-hidden rounded-full border-[1.5px] border-ink px-6 py-3 text-sm font-bold transition-all duration-300 hover:-translate-y-0.5 hover:text-paper"
+                theme="dark"
+                backgroundColor="#161613"
+                textColor="#eceae5"
+                borderColor="rgba(255,255,255,0.16)"
+                color="#ffffff"
+                trailColor="#ffffff"
+                duration={6}
+                direction="clockwise"
+                stars={1}
+                trailLength={0.3}
+                thickness={1}
+                radius={999}
+                glow={0.7}
+                hover="lap"
+                sparkle
+                clickPulse
+                className="!w-[220px] !justify-center !py-4 !text-[15px] !font-bold"
               >
-                <span className="relative z-10 transition-colors duration-500 group-hover:text-paper">进入训练档案</span>
-                <span
-                  className="absolute inset-0 z-0 origin-left scale-0 rounded-full bg-ink transition-transform duration-500 ease-out group-hover:scale-100"
-                  aria-hidden="true"
-                />
-              </a>
-              <button
-                type="button"
+                进入训练档案
+              </StarBorder>
+              <StarBorder
                 onClick={() => setGuideOpen(true)}
-                className="rounded-full border-[1.5px] border-ink/45 px-6 py-3 text-sm font-bold text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-ink"
+                theme="dark"
+                backgroundColor="#161613"
+                textColor="#eceae5"
+                borderColor="rgba(255,255,255,0.16)"
+                color="#ffffff"
+                trailColor="#ffffff"
+                duration={6}
+                direction="clockwise"
+                stars={1}
+                trailLength={0.3}
+                thickness={1}
+                radius={999}
+                glow={0.7}
+                hover="lap"
+                sparkle
+                clickPulse
+                className="!w-[220px] !justify-center !py-4 !text-[15px] !font-bold"
               >
                 操作指引
-              </button>
-              </div>
+              </StarBorder>
             </div>
           </div>
         </div>

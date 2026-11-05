@@ -45,7 +45,7 @@ export default function ReportPage() {
       <div className="mx-auto max-w-3xl px-5 py-24 text-center">
         <p className="font-serif text-2xl mb-3">没有找到这份诊断报告</p>
         <p className="text-muted text-sm mb-8">它可能已被删除，或链接不完整。</p>
-        <Link href="/" className="text-pine underline underline-offset-4">
+        <Link href="/" className="action-button">
           新建一场训练
         </Link>
       </div>

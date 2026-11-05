@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import Stepper, { Step } from "@/components/Stepper";
-import StrokeText from "@/components/StrokeText";
+import { ThinkingStatus } from "@/components/thinking-status";
 import mammoth from "mammoth";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS } from "@/lib/knowledge";
@@ -13,14 +13,6 @@ import type { CompetitionId, DiagnosisReport, JudgeMode, Persona } from "@/lib/t
 
 const fieldCls =
   "w-full border border-line bg-paper px-3 py-2.5 text-sm outline-none focus:border-copper transition-colors";
-
-// 诊断等待期间的阶段轮播：演示时间线上最大单点冷场窗口的兜底
-const DIAGNOSE_PHASES = [
-  "正在解析 BP 结构……",
-  "正在对照赛事评分标准……",
-  "正在逐维度测算得分……",
-  "正在整理漏洞与追问清单……",
-];
 
 export default function NewSessionPage() {
   const router = useRouter();
@@ -31,15 +23,10 @@ export default function NewSessionPage() {
   const [mode, setMode] = useState<JudgeMode>("normal");
   const [persona, setPersona] = useState<Persona>("tech");
   const [busy, setBusy] = useState(false);
+  const [diagnosisFinished, setDiagnosisFinished] = useState(false);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    if (!busy) return;
-    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, [busy]);
+  const bpFileRef = useRef<HTMLInputElement>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -78,7 +65,7 @@ export default function NewSessionPage() {
     if (bpText.trim().length < 50) return setError("BP 内容太短，至少 50 字（可只贴核心章节）");
 
     setBusy(true);
-    setElapsed(0);
+    setDiagnosisFinished(false);
     try {
       if (!layer) throw new Error("数据层初始化中，请重试");
       const res = await fetch("/api/diagnose", {
@@ -105,6 +92,9 @@ export default function NewSessionPage() {
         status: "diagnosed",
         created_at: new Date().toISOString(),
       });
+      // 保留完成态一拍，让三条勾选与 ThoughtLine 的收起过渡可见。
+      setDiagnosisFinished(true);
+      await new Promise<void>((resolve) => window.setTimeout(resolve, 500));
       router.push(`/report/${saved.session_id}`);
     } catch (err) {
       const quota =
@@ -130,28 +120,7 @@ export default function NewSessionPage() {
       <Link href="/" className="text-sm text-muted hover:text-ink transition-colors">
         ← 返回首页
       </Link>
-      <h1 className="mt-5 mb-4">
-        <StrokeText
-          text="新建一场训练"
-          className="stroke-text--start"
-          strokeColor="#161613"
-          fillColor="#161613"
-          fontFamily="var(--font-serif)"
-          fontWeight={700}
-          fontSize={30}
-          letterSpacing={0}
-          strokeWidth={1}
-          strokeStyle="solid"
-          drawDuration={1.1}
-          fillDelay={0.15}
-          stagger={0.05}
-          ease="power2.out"
-          trigger="mount"
-          fillMode="wipe"
-          wipeFrom="left"
-          hoverRedraw
-        />
-      </h1>
+      <h1 className="font-serif font-bold text-3xl mt-5 mb-6">新建一场训练</h1>
 
       <div className="bg-card border border-line rounded-3xl p-6 lg:p-8">
         <Stepper
@@ -168,7 +137,7 @@ export default function NewSessionPage() {
           }}
           backButtonText="上一步"
           nextButtonText="下一步"
-          completeButtonText={busy ? "诊断官正在逐维度阅读你的 BP…" : "开始诊断，进入训练"}
+          completeButtonText={busy ? "诊断中…" : "开始诊断，进入训练"}
           backButtonProps={{ disabled: busy }}
           nextButtonProps={{
             disabled: busy,
@@ -247,25 +216,26 @@ export default function NewSessionPage() {
 
           <Step title="商业计划书">
             <div className="space-y-5">
-              <label className="block">
-                <span className="text-sm font-medium block mb-1.5">
+              <div>
+                <label htmlFor="bp-content" className="text-sm font-medium block mb-1.5">
                   商业计划书 <span className="text-muted font-normal">（粘贴全文，或上传 .docx/.txt/.md）</span>
-                </span>
+                </label>
                 <textarea
+                  id="bp-content"
                   value={bpText}
                   onChange={(e) => setBpText(e.target.value)}
                   rows={9}
                   placeholder="粘贴 BP 核心内容：项目概述、痛点与方案、市场与商业模式、团队分工、进展与风险……&#10;内容越完整，诊断越准。"
                   className="w-full border border-line bg-paper px-3 py-2.5 text-sm leading-relaxed outline-none focus:border-copper transition-colors resize-y"
                 />
-                <span className="text-xs text-muted mt-1 block">
-                  当前 {bpText.length} 字
-                  <label className="ml-3 underline cursor-pointer hover:text-copper">
+                <div className="text-xs text-muted mt-2 flex flex-wrap items-center justify-between gap-3">
+                  <span>当前 {bpText.length} 字</span>
+                  <button type="button" className="action-button action-button--small" onClick={() => bpFileRef.current?.click()}>
                     上传文件
-                    <input type="file" accept=".txt,.md,.docx" onChange={onFile} className="hidden" />
-                  </label>
-                </span>
-              </label>
+                  </button>
+                  <input ref={bpFileRef} type="file" accept=".txt,.md,.docx" onChange={onFile} className="hidden" aria-label="上传 BP 文件" />
+                </div>
+              </div>
               {errorBanner}
             </div>
           </Step>
@@ -333,10 +303,20 @@ export default function NewSessionPage() {
         </Stepper>
 
         {busy && (
-          <div className="mt-5 border border-copper/30 bg-copper/5 px-4 py-3 text-sm" role="status" aria-live="polite">
-            <span className="text-copper font-semibold">{DIAGNOSE_PHASES[Math.floor(elapsed / 4) % DIAGNOSE_PHASES.length]}</span>
-            <span className="text-muted text-xs ml-3">已等待 {elapsed} 秒 · 正常需要 15-40 秒，请勿关闭页面</span>
-          </div>
+          <ThinkingStatus
+            className="mt-5"
+            working={busy && !diagnosisFinished}
+            label="正在阅读 BP…"
+            doneLabel="BP 诊断已完成 · 用时"
+            steps={[
+              "阅读项目内容与目标赛事",
+              "对照评分标准进行诊断",
+              "整理漏洞与追问建议",
+            ]}
+            estimatedDuration={4.5}
+            holdLastStep
+            note="通常需 15–40 秒，请稍候。"
+          />
         )}
 
         <p className="text-xs text-muted text-center mt-5">

@@ -26,7 +26,7 @@ export function UserMenu() {
       </span>
       <button
         onClick={() => signOut()}
-        className="underline underline-offset-2 hover:text-ink transition-colors"
+        className="action-button action-button--small"
       >
         退出
       </button>
