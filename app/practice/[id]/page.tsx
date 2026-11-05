@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MockBanner } from "@/components/ui";
+import VoicePill from "@/components/VoicePill";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS, MODES, PERSONAS } from "@/lib/knowledge";
 import { useDataLayer } from "@/lib/data-layer";
@@ -52,6 +53,21 @@ export default function PracticePage() {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
+  // 语音输入：浏览器 Web Speech API 转写，识别结果实时写入作答框
+  const recRef = useRef<{ stop: () => void } | null>(null);
+  const voiceBaseRef = useRef("");
+  const voiceFinalRef = useRef("");
+
+  useEffect(() => {
+    return () => {
+      try {
+        recRef.current?.stop();
+      } catch {
+        /* 忽略卸载时的停止失败 */
+      }
+      recRef.current = null;
+    };
+  }, []);
 
   const scrollDown = useCallback(() => {
     requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }));
@@ -244,8 +260,87 @@ export default function PracticePage() {
     scrollDown();
   }
 
+  // ---- 语音输入（Web Speech API）----
+  function startVoice() {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => {
+        lang: string;
+        continuous: boolean;
+        interimResults: boolean;
+        onresult: ((e: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
+        onerror: ((e: { error?: string }) => void) | null;
+        onend: (() => void) | null;
+        start: () => void;
+        stop: () => void;
+      };
+      webkitSpeechRecognition?: typeof w.SpeechRecognition;
+    };
+    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SR) {
+      pushSystem("当前浏览器不支持语音识别，请用 Chrome / Edge 或手动输入。");
+      return;
+    }
+    try {
+      recRef.current?.stop();
+    } catch {
+      /* 忽略重复停止 */
+    }
+    voiceBaseRef.current = input;
+    voiceFinalRef.current = "";
+    const rec = new SR();
+    rec.lang = "zh-CN";
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.onresult = (e) => {
+      let interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i += 1) {
+        const r = e.results[i];
+        if (r.isFinal) voiceFinalRef.current += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      setInput(voiceBaseRef.current + voiceFinalRef.current + interim);
+    };
+    rec.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        pushSystem("麦克风权限被拒绝，请在浏览器地址栏允许麦克风后重试。");
+      }
+    };
+    rec.onend = () => {
+      recRef.current = null;
+    };
+    recRef.current = rec;
+    try {
+      rec.start();
+    } catch {
+      pushSystem("语音识别启动失败，请稍后重试或手动输入。");
+    }
+  }
+
+  function stopVoice(reason: string) {
+    const rec = recRef.current;
+    recRef.current = null;
+    try {
+      rec?.stop();
+    } catch {
+      /* 忽略停止失败 */
+    }
+    if (reason === "cancel") {
+      setInput(voiceBaseRef.current);
+      voiceFinalRef.current = "";
+      pushSystem("已取消本次语音输入。");
+    } else {
+      setInput(voiceBaseRef.current + voiceFinalRef.current);
+    }
+  }
+
   async function send() {
     if (!session || !layer || !input.trim() || !pendingQuestion || busy || ended) return;
+    try {
+      recRef.current?.stop();
+    } catch {
+      /* 忽略 */
+    }
+    recRef.current = null;
     const answer = input.trim();
     const askedQuestion = pendingQuestion;
     setInput("");
@@ -345,7 +440,7 @@ export default function PracticePage() {
     return (
       <div className="mx-auto max-w-3xl px-5 py-24 text-center">
         <p className="font-serif text-2xl mb-3">训练场次不存在</p>
-        <Link href="/" className="text-pine underline underline-offset-4">
+        <Link href="/" className="action-button">
           新建一场训练
         </Link>
       </div>
@@ -543,20 +638,50 @@ export default function PracticePage() {
             </div>
           )}
           <div className="flex gap-3">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            rows={3}
-            disabled={busy || !pendingQuestion}
-            placeholder={pendingQuestion ? "像正式答辩一样作答：Enter 发送，Shift+Enter 换行。" : "等待评委出题…"}
-            className="flex-1 min-w-0 border border-line bg-card px-4 py-3 text-sm leading-relaxed outline-none focus:border-pine transition-colors resize-none disabled:opacity-60"
-          />
+          <div className="flex-1 min-w-0 flex flex-col border border-line bg-card focus-within:border-pine transition-colors">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+              rows={3}
+              disabled={busy || !pendingQuestion}
+              placeholder={pendingQuestion ? "像正式答辩一样作答：Enter 发送，Shift+Enter 换行；也可以点下方麦克风语音作答。" : "等待评委出题…"}
+              className="w-full bg-transparent px-4 py-3 text-sm leading-relaxed outline-none resize-none disabled:opacity-60"
+            />
+            <div className="flex items-center justify-between gap-3 px-3 pb-2">
+              <span className="text-[10px] text-muted tabular-nums shrink-0">{input.length} 字</span>
+              <div className="flex items-center min-w-0">
+                <VoicePill
+                  size={30}
+                  background="#161613"
+                  accentColor="#eceae5"
+                  iconColor="#6d6c66"
+                  showTime
+                  waveform
+                  slideToCancel
+                  cancelDistance={64}
+                  attack={40}
+                  release={240}
+                  sensitivity={1}
+                  floor={0.1}
+                  openDuration={200}
+                  pressScale={0.95}
+                  mode="auto"
+                  holdAfter={300}
+                  reactive="simulated"
+                  disabled={busy || !pendingQuestion}
+                  ariaLabel="语音输入"
+                  onStart={() => startVoice()}
+                  onStop={({ reason }) => stopVoice(reason)}
+                />
+              </div>
+            </div>
+          </div>
           <div className="flex flex-col gap-2 shrink-0">
             <button
               onClick={send}
@@ -568,14 +693,14 @@ export default function PracticePage() {
             <button
               onClick={() => setAskModal(true)}
               disabled={busy || ended}
-              className="text-xs text-muted underline underline-offset-2 hover:text-copper transition-colors disabled:opacity-40"
+              className="action-button w-full"
             >
               评委现场出题
             </button>
             <button
               onClick={finish}
               disabled={busy || records.length === 0}
-              className="text-xs text-muted underline underline-offset-2 hover:text-crimson transition-colors disabled:opacity-40"
+              className="action-button w-full"
             >
               练够了，去复盘
             </button>

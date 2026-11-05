@@ -8,9 +8,9 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
 export default function AuthPage() {
-  const { isConfigured, signIn, signUp, sendCode } = useAuth();
+  const { isConfigured, signIn, signUp, sendCode, resetPassword } = useAuth();
   const router = useRouter();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -46,11 +46,19 @@ export default function AuthPage() {
         const { error: err } = await signIn(email.trim(), password);
         if (err) throw new Error(err);
         router.push("/archive");
-      } else {
+      } else if (mode === "signup") {
         if (!code.trim()) throw new Error("请先获取并填写邮箱验证码");
         const { error: err } = await signUp(email.trim(), password, code.trim(), displayName.trim());
         if (err) throw new Error(err);
         router.push("/archive");
+      } else {
+        if (!code.trim()) throw new Error("请先获取并填写邮箱验证码");
+        const { error: err } = await resetPassword(email.trim(), code.trim(), password);
+        if (err) throw new Error(err);
+        setMode("signin");
+        setCode("");
+        setPassword("");
+        setNotice("密码已重置，请用新密码登录。");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "操作失败，请重试");
@@ -64,9 +72,13 @@ export default function AuthPage() {
       <Link href="/" className="text-sm text-muted hover:text-ink transition-colors">
         ← 返回首页
       </Link>
-      <h1 className="font-serif font-bold text-3xl mt-5 mb-1">{mode === "signin" ? "登录" : "注册"}</h1>
+      <h1 className="font-serif font-bold text-3xl mt-5 mb-1">
+        {mode === "signin" ? "登录" : mode === "signup" ? "注册" : "重置密码"}
+      </h1>
       <p className="text-muted text-sm mb-6">
-        登录后训练数据存入云端，跨设备同步；不登录也可以继续本地模式。
+        {mode === "reset"
+          ? "输入邮箱验证码，设置一个新密码。"
+          : "登录后训练数据存入云端，跨设备同步；不登录也可以继续本地模式。"}
       </p>
 
       {!isConfigured ? (
@@ -103,7 +115,7 @@ export default function AuthPage() {
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium block mb-1.5">密码</span>
+          <span className="text-sm font-medium block mb-1.5">{mode === "reset" ? "新密码" : "密码"}</span>
           <input
             type="password"
             required
@@ -115,7 +127,7 @@ export default function AuthPage() {
           />
         </label>
 
-        {mode === "signup" && (
+        {mode !== "signin" && (
           <label className="block">
             <span className="text-sm font-medium block mb-1.5">邮箱验证码</span>
             <div className="flex gap-2">
@@ -148,22 +160,68 @@ export default function AuthPage() {
           disabled={busy || !isConfigured}
           className="w-full bg-pine text-paper font-bold text-lg py-3.5 rounded-xl hover:bg-pinedeep transition-colors disabled:opacity-60"
         >
-          {busy ? "处理中…" : mode === "signin" ? "登录" : "注册并进入训练档案"}
+          {busy ? "处理中…" : mode === "signin" ? "登录" : mode === "signup" ? "注册并进入训练档案" : "重置密码"}
         </button>
-        <p className="text-sm text-muted text-center">
-          {mode === "signin" ? "还没有账号？" : "已有账号？"}
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === "signin" ? "signup" : "signin");
-              setError("");
-              setNotice("");
-            }}
-            className="ml-1 text-copper underline underline-offset-4 hover:text-copperbright"
-          >
-            {mode === "signin" ? "去注册" : "去登录"}
-          </button>
-        </p>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted">
+          {mode === "signin" && (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("reset");
+                  setError("");
+                  setNotice("");
+                }}
+                className="action-button action-button--small"
+              >
+                忘记密码？
+              </button>
+              <span>
+                还没有账号？
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("signup");
+                    setError("");
+                    setNotice("");
+                  }}
+                  className="action-button action-button--small ml-2"
+                >
+                  去注册
+                </button>
+              </span>
+            </>
+          )}
+          {mode === "signup" && (
+            <span>
+              已有账号？
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("signin");
+                  setError("");
+                  setNotice("");
+                }}
+                className="action-button action-button--small ml-2"
+              >
+                去登录
+              </button>
+            </span>
+          )}
+          {mode === "reset" && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signin");
+                setError("");
+                setNotice("");
+              }}
+              className="action-button action-button--small"
+            >
+              ← 返回登录
+            </button>
+          )}
+        </div>
       </form>
     </section>
   );

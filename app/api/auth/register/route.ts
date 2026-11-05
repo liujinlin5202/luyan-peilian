@@ -7,6 +7,12 @@ import { consumeCode } from "@/lib/verify-store";
 
 export const runtime = "nodejs";
 
+function friendly(message: string): string {
+  return /fetch|network|ECONN|ENOTFOUND|ETIMEDOUT|reset/i.test(message)
+    ? "无法连接云端服务（supabase.co），请检查网络或代理后重试"
+    : message;
+}
+
 export async function POST(req: Request) {
   const { email, password, displayName, code } = (await req.json()) as {
     email?: string;
@@ -32,17 +38,24 @@ export async function POST(req: Request) {
   if (!check.ok) return NextResponse.json({ error: check.error }, { status: 400 });
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data, error } = await admin.auth.admin.createUser({
-    email: addr,
-    password: pwd,
-    email_confirm: true,
-    user_metadata: displayName ? { display_name: displayName } : {},
-  });
-  if (error) {
-    const msg = error.message.toLowerCase().includes("already")
-      ? "该邮箱已注册，请直接登录"
-      : error.message;
-    return NextResponse.json({ error: msg }, { status: 400 });
+  try {
+    const { data, error } = await admin.auth.admin.createUser({
+      email: addr,
+      password: pwd,
+      email_confirm: true,
+      user_metadata: displayName ? { display_name: displayName } : {},
+    });
+    if (error) {
+      const msg = error.message.toLowerCase().includes("already")
+        ? "该邮箱已注册，请直接登录"
+        : friendly(error.message);
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true, user_id: data.user?.id ?? null });
+  } catch (e) {
+    return NextResponse.json(
+      { error: friendly(e instanceof Error ? e.message : String(e)) },
+      { status: 502 }
+    );
   }
-  return NextResponse.json({ ok: true, user_id: data.user?.id ?? null });
 }

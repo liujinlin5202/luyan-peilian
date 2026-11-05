@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AIBadge, MockBanner } from "@/components/ui";
+import { ThinkingStatus } from "@/components/thinking-status";
 import { RadarChart, ScoreBars } from "@/components/scores";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS } from "@/lib/knowledge";
@@ -33,6 +34,7 @@ export default function ReviewPage() {
   const [review, setReview] = useState<ReviewReport | null>(null);
   const [records, setRecords] = useState<QARecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewPhase, setReviewPhase] = useState("正在读取训练记录…");
   const [error, setError] = useState("");
   const [fatal, setFatal] = useState(false); // 场次不存在/无记录这类不可重试错误
   const [retryNonce, setRetryNonce] = useState(0);
@@ -93,6 +95,7 @@ export default function ReviewPage() {
           setReview(s.review);
           void restoreVerdicts(s, s.review);
         } else if (records.length) {
+          setReviewPhase("正在生成复盘…");
           const res = await fetch("/api/review", {
             method: "POST",
             headers: { "Content-Type": "application/json", ...demoTokenHeaders },
@@ -137,6 +140,7 @@ export default function ReviewPage() {
     reviewedRef.current = false;
     setError("");
     setLoading(true);
+    setReviewPhase("正在读取训练记录…");
     setRetryNonce((n) => n + 1);
   }
 
@@ -233,11 +237,27 @@ export default function ReviewPage() {
     setExported(true);
   }
 
+  const thinkingStatus = (
+    <ThinkingStatus
+      key="review-thought"
+      className="mb-6 text-left no-print"
+      working={loading}
+      label={reviewPhase}
+      doneLabel={error || fatal ? "复盘已暂停 · 用时" : "复盘已完成 · 用时"}
+      steps={error || fatal ? [] : [
+        "回顾本场答辩与问答",
+        "整理逐题点评与评分",
+        "汇总漏洞与训练建议",
+      ]}
+      estimatedDuration={4.5}
+      note="正在准备完整复盘，请稍候。"
+    />
+  );
+
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-5 py-28 text-center">
-        <p className="font-serif text-2xl text-pine mb-3">复盘官正在逐题回看你的表现…</p>
-        <p className="text-muted text-sm">对照问答实录生成评分卡、参考回答与漏洞清单，通常需要几十秒。</p>
+        {thinkingStatus}
       </div>
     );
   }
@@ -245,17 +265,18 @@ export default function ReviewPage() {
   if (!session || !review || error) {
     return (
       <div className="mx-auto max-w-3xl px-5 py-24 text-center">
+        {thinkingStatus}
         <p className="font-serif text-2xl mb-3">{error || "复盘报告不存在"}</p>
-        <div className="flex items-center justify-center gap-5">
+        <div className="flex flex-wrap items-center justify-center gap-3">
           {!fatal && (
             <button onClick={retryReview} className="bg-pine text-paper font-bold px-5 py-2.5 rounded-xl hover:bg-pinedeep transition-colors">
               重试复盘
             </button>
           )}
-          <Link href={`/practice/${id}`} className="text-pine underline underline-offset-4">
+          <Link href={`/practice/${id}`} className="action-button">
             返回本场陪练
           </Link>
-          <Link href="/" className="text-muted underline underline-offset-4">
+          <Link href="/" className="action-button">
             新建一场训练
           </Link>
         </div>
@@ -269,6 +290,7 @@ export default function ReviewPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-5 pt-24 pb-10">
+      {thinkingStatus}
       {review.mock && <MockBanner />}
 
       <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-pine pb-5 mb-10">
@@ -359,13 +381,16 @@ export default function ReviewPage() {
                 {pq?.reference && (
                   <div className="mt-3 no-print">
                     <button
+                      type="button"
                       onClick={() => setOpenRef((o) => ({ ...o, [r.round]: !o[r.round] }))}
-                      className="text-xs text-copper hover:underline underline-offset-4"
+                      className="action-button action-button--small"
+                      aria-expanded={Boolean(openRef[r.round])}
+                      aria-controls={`reference-answer-${r.round}`}
                     >
                       {openRef[r.round] ? "收起 AI 参考回答 ▴" : "看 AI 参考回答 ▾"}
                     </button>
                     {openRef[r.round] && (
-                      <div className="mt-2 border border-copper/30 bg-copper/5 px-4 py-3 leading-relaxed">
+                      <div id={`reference-answer-${r.round}`} className="mt-2 border border-copper/30 bg-copper/5 px-4 py-3 leading-relaxed">
                         <p className="text-[10px] text-copper tracking-widest mb-1.5">AI 生成 · 仅供参考，请改写成自己的语言</p>
                         {pq.reference}
                       </div>

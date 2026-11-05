@@ -8,6 +8,22 @@ import { issueCode } from "@/lib/verify-store";
 export const runtime = "nodejs";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const MX_TIMEOUT_MS = 1500;
+
+/** 域名能否收信：true 能 / false 不能 / null 无法判定（超时，放行） */
+async function domainAcceptsMail(domain: string): Promise<boolean | null> {
+  try {
+    const mx = await Promise.race([
+      dns.resolveMx(domain),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("dns timeout")), MX_TIMEOUT_MS)),
+    ]);
+    return Array.isArray(mx) && mx.length > 0;
+  } catch (e) {
+    const code = (e as { code?: string }).code;
+    if (code === "ENOTFOUND" || code === "ENODATA") return false;
+    return null;
+  }
+}
 
 export async function POST(req: Request) {
   const { email } = (await req.json()) as { email?: string };
@@ -16,14 +32,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "邮箱格式不正确" }, { status: 400 });
   }
   const domain = addr.split("@")[1];
-  // 域名真实可收信校验（无 MX 记录的域名直接拒绝）
-  try {
-    const mx = await dns.resolveMx(domain);
-    if (!mx || mx.length === 0) {
-      return NextResponse.json({ error: "该邮箱域名无法接收邮件，请更换" }, { status: 400 });
-    }
-  } catch {
-    return NextResponse.json({ error: "该邮箱域名不存在或无法解析，请更换" }, { status: 400 });
+  const mxOk = await domainAcceptsMail(domain);
+  if (mxOk === false) {
+    return NextResponse.json({ error: "该邮箱域名不存在或无法接收邮件，请更换" }, { status: 400 });
   }
 
   const result = issueCode(addr);

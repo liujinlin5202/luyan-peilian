@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import StrokeText from "@/components/StrokeText";
 import { COMPETITIONS, PERSONAS } from "@/lib/knowledge";
 import { useDataLayer, hasLocalData, alreadyMigrated, importLocalToCloud } from "@/lib/data-layer";
 import { useDialog } from "@/lib/use-dialog";
@@ -223,28 +222,7 @@ export default function ArchivePage() {
       <div className="border-b-2 border-pine pb-5 mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs text-muted tracking-widest mb-1">训练档案 · P5</p>
-          <h1>
-            <StrokeText
-              text="成长，要看得见才作数"
-              className="stroke-text--start"
-              strokeColor="#161613"
-              fillColor="#161613"
-              fontFamily="var(--font-serif)"
-              fontWeight={700}
-              fontSize={30}
-              letterSpacing={0}
-              strokeWidth={1}
-              strokeStyle="solid"
-              drawDuration={1.1}
-              fillDelay={0.15}
-              stagger={0.05}
-              ease="power2.out"
-              trigger="mount"
-              fillMode="wipe"
-              wipeFrom="left"
-              hoverRedraw
-            />
-          </h1>
+          <h1 className="font-serif font-bold text-3xl">成长，要看得见才作数</h1>
         </div>
         <div className="flex items-center gap-3 no-print">
           <button
@@ -314,7 +292,7 @@ export default function ArchivePage() {
             ))}
             <button
               onClick={() => removeTeam(activeTeam)}
-              className="ml-auto text-xs text-muted underline underline-offset-2 hover:text-crimson transition-colors"
+              className="action-button action-button--small action-button--danger ml-auto"
             >
               删除当前团队全部数据
             </button>
@@ -426,25 +404,25 @@ export default function ArchivePage() {
                       </p>
                     </div>
                     {s.overall_score != null && <span className="font-serif font-bold text-2xl text-pine">{s.overall_score}<span className="text-xs text-muted font-sans font-normal">分</span></span>}
-                    <div className="flex items-center gap-1 text-sm">
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
                       <button
                         onClick={() => setBpSession(s)}
-                        className="text-pine underline underline-offset-4 hover:text-copper px-2 py-2.5"
+                        className="action-button action-button--small"
                       >
                         BP
                       </button>
-                      <Link href={`/report/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper px-2 py-2.5">
+                      <Link href={`/report/${s.session_id}`} className="action-button action-button--small">
                         诊断
                       </Link>
-                      <Link href={`/practice/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper px-2 py-2.5">
+                      <Link href={`/practice/${s.session_id}`} className="action-button action-button--small">
                         陪练
                       </Link>
-                      <Link href={`/review/${s.session_id}`} className="text-pine underline underline-offset-4 hover:text-copper px-2 py-2.5">
+                      <Link href={`/review/${s.session_id}`} className="action-button action-button--small">
                         复盘
                       </Link>
                       <button
                         onClick={() => removeSession(s.session_id)}
-                        className="text-muted underline underline-offset-4 hover:text-crimson transition-colors px-2 py-2.5 ml-1"
+                        className="action-button action-button--small action-button--danger"
                       >
                         删除
                       </button>
