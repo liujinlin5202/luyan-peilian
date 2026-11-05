@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MockBanner } from "@/components/ui";
-import VoicePill from "@/components/VoicePill";
+import VoicePill from "@/components/bits/VoicePill";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS, MODES, PERSONAS } from "@/lib/knowledge";
 import { useDataLayer } from "@/lib/data-layer";

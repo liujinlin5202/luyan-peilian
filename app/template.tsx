@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import AnimatedContent from "@/components/AnimatedContent";
+import AnimatedContent from "@/components/bits/AnimatedContent";
 
 /* 路由切换进场：template 在一级路由变化时重挂载，动画随每次导航重放。
    欢迎页（/）自带开屏 hero-rise 序列，不重复包裹。 */
