@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AIBadge, MockBanner } from "@/components/ui";
+import { GlassCard } from "@/components/glass-card";
+import { GradientButton } from "@/components/gradient-button";
 import { RadarChart, ScoreBars, ScoreRing } from "@/components/scores";
 import { COMPETITIONS } from "@/lib/knowledge";
 import { useDataLayer } from "@/lib/data-layer";
@@ -133,20 +135,15 @@ export default function ReportPage() {
             </ul>
           </div>
 
-          <div className="bg-pine text-paper p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+          <GlassCard contentClassName="flex flex-wrap items-center justify-between gap-4 p-6">
             <div>
-              <p className="font-serif font-bold text-xl">漏洞看清了，进舱实战。</p>
-              <p className="text-paper/60 text-sm mt-1">
+              <p className="font-serif font-bold text-xl text-ink">漏洞看清了，进舱实战。</p>
+              <p className="text-muted text-sm mt-1">
                 评委将围绕弱点清单定向提问，60% 的题打在你还没补的洞上。
               </p>
             </div>
-            <Link
-              href={`/practice/${session.session_id}`}
-              className="bg-copperbright text-ink font-bold px-6 py-3 hover:brightness-110 transition"
-            >
-              开始陪练 →
-            </Link>
-          </div>
+            <GradientButton href={`/practice/${session.session_id}`}>开始陪练 →</GradientButton>
+          </GlassCard>
         </section>
       </div>
     </div>

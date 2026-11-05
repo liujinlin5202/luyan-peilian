@@ -4,8 +4,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AIBadge, MockBanner } from "@/components/ui";
+import { GlassCard } from "@/components/glass-card";
+import { GradientButton } from "@/components/gradient-button";
+import Magnet from "@/components/Magnet";
 import { ThinkingStatus } from "@/components/thinking-status";
+import ThoughtLine from "@/components/ThoughtLine";
 import { RadarChart, ScoreBars } from "@/components/scores";
+import CountUp from "@/components/CountUp";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS } from "@/lib/knowledge";
 import { useDataLayer } from "@/lib/data-layer";
@@ -42,6 +47,8 @@ export default function ReviewPage() {
   const [verdicts, setVerdicts] = useState<Record<number, WeaknessStatus>>({});
   const [pastItems, setPastItems] = useState<WeaknessItem[]>([]);
   const [openRef, setOpenRef] = useState<Record<number, boolean>>({});
+  // 参考回答「思考 → 成稿」两段式：点开后先跑 ThoughtLine，settle 后再显出正文
+  const [refReady, setRefReady] = useState<Record<number, boolean>>({});
   const [exported, setExported] = useState(false);
   // reviewedRef 防重：React StrictMode 下 effect 会执行两次，只允许发一次复盘请求
   const reviewedRef = useRef(false);
@@ -316,13 +323,24 @@ export default function ReviewPage() {
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
             {prevScore != null && (
               <div className="text-center opacity-60">
-                <span className="font-serif text-4xl font-bold">{prevScore}</span>
+                <span className="font-serif text-4xl font-bold"><CountUp to={prevScore} from={0} duration={1} trigger="view" /></span>
                 <p className="text-xs text-muted mt-1">上一场</p>
               </div>
             )}
             {prevScore != null && <span className="font-serif text-2xl text-muted pb-5">→</span>}
             <div className="text-center">
-              <span className="font-serif text-6xl font-bold text-pine">{total}</span>
+              <span className="font-serif text-6xl font-bold text-pine">
+                <CountUp
+                  to={total}
+                  from={0}
+                  mode="roll"
+                  duration={1.4}
+                  easing="easeOut"
+                  trigger="view"
+                  replayOnHover
+                  style={{ display: "inline-block", verticalAlign: "baseline" }}
+                />
+              </span>
               <p className="text-xs text-muted mt-1">本场 · 满分 {maxTotal}</p>
             </div>
             {delta != null && (
@@ -382,7 +400,11 @@ export default function ReviewPage() {
                   <div className="mt-3 no-print">
                     <button
                       type="button"
-                      onClick={() => setOpenRef((o) => ({ ...o, [r.round]: !o[r.round] }))}
+                      onClick={() => {
+                        const opening = !openRef[r.round];
+                        setOpenRef((o) => ({ ...o, [r.round]: opening }));
+                        if (opening) setRefReady((o) => ({ ...o, [r.round]: false }));
+                      }}
                       className="action-button action-button--small"
                       aria-expanded={Boolean(openRef[r.round])}
                       aria-controls={`reference-answer-${r.round}`}
@@ -391,8 +413,26 @@ export default function ReviewPage() {
                     </button>
                     {openRef[r.round] && (
                       <div id={`reference-answer-${r.round}`} className="mt-2 border border-copper/30 bg-copper/5 px-4 py-3 leading-relaxed">
-                        <p className="text-[10px] text-copper tracking-widest mb-1.5">AI 生成 · 仅供参考，请改写成自己的语言</p>
-                        {pq.reference}
+                        <ThoughtLine
+                          working
+                          settleAfter={1.1}
+                          steps={["读取本场问答记录", "对齐本场评分维度", "起草参考回答"]}
+                          label="正在整理参考回答"
+                          doneLabel="参考回答已就绪"
+                          showTimer={false}
+                          fontSize={12}
+                          color="var(--color-copper)"
+                          glyphColor="var(--color-copperbright)"
+                          collapseOnSettle
+                          onSettle={() => setRefReady((o) => ({ ...o, [r.round]: true }))}
+                          className="mb-2"
+                        />
+                        {refReady[r.round] && (
+                          <div className="fade-in">
+                            <p className="text-[10px] text-copper tracking-widest mb-1.5">AI 生成 · 仅供参考，请改写成自己的语言</p>
+                            {pq.reference}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -488,20 +528,20 @@ export default function ReviewPage() {
           <p className="text-xs text-muted mt-3">已确认 {confirmedCount} 条，写入档案成功。</p>
         )}
 
-        <div className="mt-10 bg-pine text-paper p-6 rounded-2xl space-y-3 no-print">
-          <p className="font-serif font-bold text-xl">漏洞确认完，就再练一场。</p>
-          <p className="text-paper/60 text-sm">
+        <GlassCard className="mt-10 no-print" contentClassName="space-y-3 p-6">
+          <p className="font-serif font-bold text-xl text-ink">漏洞确认完，就再练一场。</p>
+          <p className="text-muted text-sm">
             每一场都会被档案记住。得分曲线和漏洞闭环率，就是你备赛进度最硬的证据。
           </p>
-          <div className="flex gap-3 pt-2">
-            <Link href="/" className="bg-copperbright text-ink font-bold px-5 py-2.5 hover:brightness-110 transition">
-              再练一场
-            </Link>
-            <Link href="/archive" className="border border-paper/40 px-5 py-2.5 hover:border-copperbright hover:text-copperbright transition">
-              查看训练档案
-            </Link>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <GradientButton href="/">再练一场</GradientButton>
+            <Magnet padding={80} magnetStrength={6} maxOffset={10} scale={1.02}>
+              <Link href="/archive" className="action-button !rounded-full !px-6 !py-3">
+                查看训练档案
+              </Link>
+            </Magnet>
           </div>
-        </div>
+        </GlassCard>
       </section>
     </div>
   );

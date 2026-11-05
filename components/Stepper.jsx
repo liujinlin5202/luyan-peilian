@@ -2,6 +2,7 @@
 
 import { Children, isValidElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
+import Magnet from '@/components/Magnet';
 import { ArrowLeft01Icon, ArrowRight01Icon, Tick02Icon } from '@hugeicons/core-free-icons';
 
 import './Stepper.css';
@@ -466,33 +467,37 @@ export default function Stepper({
           >
             <div className="stepper__footer-clip">
               <div className={`stepper__footer ${footerClassName}`.trim()}>
-                <button
-                  type="button"
-                  {...backRest}
-                  className={`stepper__button stepper__button--back ${backClass}`.trim()}
-                  data-hidden={current <= 1 ? '' : undefined}
-                  tabIndex={completed ? -1 : backRest.tabIndex}
-                  onClick={event => {
-                    onBackClick?.(event);
-                    if (!event.defaultPrevented) go(current - 1);
-                  }}
-                >
-                  <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2} />
-                  <span>{backButtonText}</span>
-                </button>
-                <button
-                  type="button"
-                  {...nextRest}
-                  className={`stepper__button stepper__button--next ${nextClass}`.trim()}
-                  tabIndex={completed ? -1 : nextRest.tabIndex}
-                  onClick={event => {
-                    onNextClick?.(event);
-                    if (!event.defaultPrevented) go(current + 1);
-                  }}
-                >
-                  <span>{nextLabel}</span>
-                  <HugeiconsIcon icon={isLast ? Tick02Icon : ArrowRight01Icon} size={16} strokeWidth={2} />
-                </button>
+                <Magnet padding={70} magnetStrength={6} maxOffset={10} scale={1.02}>
+                  <button
+                    type="button"
+                    {...backRest}
+                    className={`stepper__button stepper__button--back ${backClass}`.trim()}
+                    data-hidden={current <= 1 ? '' : undefined}
+                    tabIndex={completed ? -1 : backRest.tabIndex}
+                    onClick={event => {
+                      onBackClick?.(event);
+                      if (!event.defaultPrevented) go(current - 1);
+                    }}
+                  >
+                    <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={2} />
+                    <span>{backButtonText}</span>
+                  </button>
+                </Magnet>
+                <Magnet padding={80} magnetStrength={5} maxOffset={12} scale={1.03} wrapperClassName="ml-auto">
+                  <button
+                    type="button"
+                    {...nextRest}
+                    className={`stepper__button stepper__button--next ${nextClass}`.trim()}
+                    tabIndex={completed ? -1 : nextRest.tabIndex}
+                    onClick={event => {
+                      onNextClick?.(event);
+                      if (!event.defaultPrevented) go(current + 1);
+                    }}
+                  >
+                    <span>{nextLabel}</span>
+                    <HugeiconsIcon icon={isLast ? Tick02Icon : ArrowRight01Icon} size={16} strokeWidth={2} />
+                  </button>
+                </Magnet>
               </div>
             </div>
           </div>

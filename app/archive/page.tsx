@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import CountUp from "@/components/CountUp";
 import { COMPETITIONS, PERSONAS } from "@/lib/knowledge";
 import { useDataLayer, hasLocalData, alreadyMigrated, importLocalToCloud } from "@/lib/data-layer";
 import { useDialog } from "@/lib/use-dialog";
@@ -310,7 +311,11 @@ export default function ArchivePage() {
             <div className="bg-card border border-line rounded-2xl p-6">
               <p className="text-xs text-muted tracking-widest mb-2">最新综合得分</p>
               <p className="font-serif font-bold text-4xl text-pine">
-                {latest?.overall_score ?? "--"}
+                {latest?.overall_score != null ? (
+                  <CountUp to={latest.overall_score} from={0} mode="roll" duration={1.2} trigger="view" />
+                ) : (
+                  "--"
+                )}
                 {trend.length > 1 && (
                   <span
                     className={`text-base font-sans font-normal ml-2 ${
@@ -403,7 +408,7 @@ export default function ArchivePage() {
                         {new Date(s.created_at).toLocaleString("zh-CN")} · {STATUS_LABEL[s.status] ?? s.status}
                       </p>
                     </div>
-                    {s.overall_score != null && <span className="font-serif font-bold text-2xl text-pine">{s.overall_score}<span className="text-xs text-muted font-sans font-normal">分</span></span>}
+                    {s.overall_score != null && <span className="font-serif font-bold text-2xl text-pine"><CountUp to={s.overall_score} from={0} duration={0.9} trigger="view" /><span className="text-xs text-muted font-sans font-normal">分</span></span>}
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <button
                         onClick={() => setBpSession(s)}
