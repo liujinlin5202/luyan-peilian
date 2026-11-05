@@ -313,7 +313,7 @@ export default function ArchivePage() {
               <p className="text-xs text-muted tracking-widest mb-2">最新综合得分</p>
               <p className="font-serif font-bold text-4xl text-pine">
                 {latest?.overall_score != null ? (
-                  <CountUp from={0} to={latest.overall_score} duration={1.2} easing="easeOut" trigger="view" replayOnHover className="count-up-text" />
+                  <CountUp to={latest.overall_score} from={0} mode="roll" duration={1.2} trigger="view" />
                 ) : (
                   "--"
                 )}
@@ -409,7 +409,7 @@ export default function ArchivePage() {
                         {new Date(s.created_at).toLocaleString("zh-CN")} · {STATUS_LABEL[s.status] ?? s.status}
                       </p>
                     </div>
-                    {s.overall_score != null && <span className="font-serif font-bold text-2xl text-pine">{s.overall_score}<span className="text-xs text-muted font-sans font-normal">分</span></span>}
+                    {s.overall_score != null && <span className="font-serif font-bold text-2xl text-pine"><CountUp to={s.overall_score} from={0} duration={0.9} trigger="view" /><span className="text-xs text-muted font-sans font-normal">分</span></span>}
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <button
                         onClick={() => setBpSession(s)}

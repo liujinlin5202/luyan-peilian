@@ -1,3 +1,5 @@
+"use client";
+
 // 五维评分条（雷达图的低代码替代呈现，技术方案 §6 P2 说明）
 
 import CountUp from "@/components/bits/CountUp";
@@ -13,7 +15,7 @@ export function ScoreBars({ dims }: { dims: DimensionScore[] }) {
             <div className="flex items-baseline justify-between mb-1.5">
               <span className="font-medium text-sm">{d.name}</span>
               <span className="font-serif text-lg">
-                {d.score}
+                <CountUp to={d.score} from={0} duration={0.9} delay={0.05 + i * 0.06} trigger="view" />
                 <span className="text-muted text-xs"> / {d.max}</span>
               </span>
             </div>
@@ -36,7 +38,16 @@ export function ScoreRing({ score, label }: { score: number; label?: string }) {
   return (
     <div className="text-center">
       <div className="font-serif font-bold text-6xl leading-none text-pine">
-        <CountUp from={0} to={score} duration={1.4} easing="easeOut" trigger="view" replayOnHover className="count-up-text" />
+        <CountUp
+          to={score}
+          from={0}
+          mode="roll"
+          duration={1.4}
+          easing="easeOut"
+          trigger="view"
+          replayOnHover
+          style={{ display: "inline-block", verticalAlign: "baseline" }}
+        />
         <span className="text-2xl text-muted font-sans font-normal">分</span>
       </div>
       {label && <div className="text-xs text-muted mt-2 tracking-widest">{label}</div>}

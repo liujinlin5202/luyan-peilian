@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MockBanner } from "@/components/ui";
+import { GlassCard } from "@/components/glass-card";
+import Magnet from "@/components/bits/Magnet";
+import { GradientButton } from "@/components/gradient-button";
 import VoicePill from "@/components/bits/VoicePill";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS, MODES, PERSONAS } from "@/lib/knowledge";
@@ -455,42 +458,45 @@ export default function PracticePage() {
     <div className="mx-auto max-w-4xl px-5 pt-24 pb-8">
       {mock && <MockBanner reason={mockReason} />}
 
-      {/* 评委席状态栏 */}
-      <div className="bg-pine text-paper p-4 sm:p-5 mb-6 rounded-2xl flex flex-wrap items-center gap-x-6 gap-y-3">
-        <div className="min-w-0">
-          <p className="text-[11px] text-paper/50 tracking-widest">{comp.name} · 评委席</p>
-          <p className="font-serif font-bold text-lg truncate">
-            {session.team_name} · 第 {Math.min(records.length + (pendingQuestion ? 1 : 0), limit)}/{limit} 题
-          </p>
-        </div>
-        <div className="flex items-center gap-2 ml-auto flex-wrap">
-          {(Object.keys(PERSONAS) as Persona[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => switchPersona(p)}
-              disabled={busy || ended}
-              className={`text-xs px-3 py-2 border transition-colors disabled:opacity-40 ${
-                session.persona === p
-                  ? "border-copperbright bg-copperbright text-ink font-bold"
-                  : "border-paper/30 text-paper/80 hover:border-copperbright hover:text-copperbright"
-              }`}
-            >
-              {PERSONAS[p].label}
-            </button>
-          ))}
-          <button
-            onClick={switchMode}
-            disabled={busy || ended}
-            className={`text-xs px-3 py-2 border transition-colors disabled:opacity-40 ${
-              session.mode === "hell"
-                ? "border-crimson bg-crimson/25 text-paper font-bold"
-                : "border-paper/30 text-paper/80 hover:border-copperbright"
-            }`}
-          >
-            {MODES[session.mode].label}
-          </button>
-        </div>
-      </div>
+      {/* 评委席状态栏 · 玻璃质感 */}
+      <GlassCard className="mb-6" contentClassName="flex flex-wrap items-center gap-x-6 gap-y-3 p-4 sm:p-5">
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted tracking-widest">{comp.name} · 评委席</p>
+            <p className="font-serif font-bold text-lg truncate text-ink">
+              {session.team_name} · 第 {Math.min(records.length + (pendingQuestion ? 1 : 0), limit)}/{limit} 题
+            </p>
+          </div>
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
+            {(Object.keys(PERSONAS) as Persona[]).map((p) => (
+              <Magnet key={p} padding={55} magnetStrength={8} maxOffset={6} scale={1.03}>
+                <button
+                  onClick={() => switchPersona(p)}
+                  disabled={busy || ended}
+                  className={`text-xs px-4 py-2 rounded-full border transition-colors disabled:opacity-40 ${
+                    session.persona === p
+                      ? "border-ink/20 bg-shell text-ink font-bold"
+                      : "border-ink/15 text-ink/60 hover:border-ink/30 hover:text-ink"
+                  }`}
+                >
+                  {PERSONAS[p].label}
+                </button>
+              </Magnet>
+            ))}
+            <Magnet padding={55} magnetStrength={8} maxOffset={6} scale={1.03}>
+              <button
+                onClick={switchMode}
+                disabled={busy || ended}
+                className={`text-xs px-4 py-2 rounded-full border transition-colors disabled:opacity-40 ${
+                  session.mode === "hell"
+                    ? "border-crimson/60 bg-crimson/10 text-crimson font-bold"
+                    : "border-ink/15 text-ink/60 hover:border-ink/30 hover:text-ink"
+                }`}
+              >
+                {MODES[session.mode].label}
+              </button>
+            </Magnet>
+          </div>
+      </GlassCard>
 
       {/* 逐题得分面板 */}
       {records.length > 0 && (
@@ -605,14 +611,12 @@ export default function PracticePage() {
 
       {/* 输入区 */}
       {ended ? (
-        <div className="mt-5 bg-pine text-paper p-6 rounded-2xl flex flex-wrap items-center justify-between gap-4">
-          <p className="font-serif font-bold text-lg">
+        <GlassCard className="mt-5" contentClassName="flex flex-wrap items-center justify-between gap-4 p-6">
+          <p className="font-serif font-bold text-lg text-ink">
             本场 {records.length} 题答完。评委退场，复盘官进场。
           </p>
-          <button onClick={finish} className="bg-copperbright text-ink font-bold px-6 py-3 hover:brightness-110 transition">
-            生成复盘报告 →
-          </button>
-        </div>
+          <GradientButton onClick={finish}>生成复盘报告 →</GradientButton>
+        </GlassCard>
       ) : (
         <div className="mt-5">
           {secondsLeft != null && (
