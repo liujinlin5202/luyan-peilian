@@ -216,6 +216,125 @@ html {
   }
 }
 
+/* ===== BP 原文 Markdown 渲染（components/markdown.tsx） ===== */
+.bp-markdown {
+  font-size: 0.875rem;
+  line-height: 1.9;
+  word-break: break-word;
+}
+.bp-markdown h1,
+.bp-markdown h2,
+.bp-markdown h3,
+.bp-markdown h4,
+.bp-markdown h5,
+.bp-markdown h6 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 1.4em 0 0.6em;
+}
+.bp-markdown h1 {
+  font-size: 1.45rem;
+  padding-bottom: 0.4em;
+  border-bottom: 1.5px solid var(--color-ink);
+}
+.bp-markdown h2 {
+  font-size: 1.2rem;
+}
+.bp-markdown h3 {
+  font-size: 1.05rem;
+}
+.bp-markdown h4,
+.bp-markdown h5,
+.bp-markdown h6 {
+  font-size: 0.95rem;
+}
+.bp-markdown p {
+  margin: 0.7em 0;
+}
+.bp-markdown > :first-child {
+  margin-top: 0;
+}
+.bp-markdown blockquote {
+  margin: 0.8em 0;
+  padding: 0.1em 0 0.1em 0.9em;
+  border-left: 2px solid var(--color-copper);
+  color: var(--color-muted);
+}
+.bp-markdown blockquote p {
+  margin: 0.35em 0;
+}
+.bp-markdown ul,
+.bp-markdown ol {
+  margin: 0.7em 0;
+  padding-left: 1.5em;
+}
+.bp-markdown ul {
+  list-style: disc;
+}
+.bp-markdown ol {
+  list-style: decimal;
+}
+.bp-markdown li {
+  margin: 0.25em 0;
+}
+.bp-markdown hr {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  margin: 1.6em 0;
+}
+.bp-markdown a {
+  color: var(--color-copper);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.bp-markdown strong {
+  font-weight: 700;
+}
+.bp-markdown code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  background: rgba(22, 22, 19, 0.06);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+.bp-markdown pre {
+  background: rgba(22, 22, 19, 0.06);
+  border-radius: 8px;
+  padding: 0.8em 1em;
+  overflow-x: auto;
+  margin: 0.9em 0;
+}
+.bp-markdown pre code {
+  background: none;
+  padding: 0;
+}
+.bp-markdown table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 0.82rem;
+}
+.bp-markdown th,
+.bp-markdown td {
+  border: 1px solid var(--color-line);
+  padding: 0.45em 0.6em;
+  text-align: left;
+  vertical-align: top;
+  min-width: 5em;
+}
+.bp-markdown th {
+  background: rgba(22, 22, 19, 0.04);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bp-markdown img {
+  max-width: 100%;
+}
+
 /* 打印 / 存为 PDF：隐藏导航与交互控件，白底黑字 */
 @media print {
   header,

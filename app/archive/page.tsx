@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import CountUp from "@/components/bits/CountUp";
+import { Markdown, looksLikeMarkdown } from "@/components/markdown";
 import { COMPETITIONS, PERSONAS } from "@/lib/knowledge";
 import { useDataLayer, hasLocalData, alreadyMigrated, importLocalToCloud } from "@/lib/data-layer";
 import { useDialog } from "@/lib/use-dialog";
@@ -303,14 +305,18 @@ export default function ArchivePage() {
             <div className="bg-card border border-line rounded-2xl p-6">
               <p className="text-xs text-muted tracking-widest mb-2">累计训练</p>
               <p className="font-serif font-bold text-4xl text-pine">
-                {teamSessions.length}
+                <CountUp from={0} to={teamSessions.length} duration={1.2} easing="easeOut" trigger="view" replayOnHover className="count-up-text" />
                 <span className="text-base text-muted font-sans font-normal"> 场</span>
               </p>
             </div>
             <div className="bg-card border border-line rounded-2xl p-6">
               <p className="text-xs text-muted tracking-widest mb-2">最新综合得分</p>
               <p className="font-serif font-bold text-4xl text-pine">
-                {latest?.overall_score ?? "--"}
+                {latest?.overall_score != null ? (
+                  <CountUp from={0} to={latest.overall_score} duration={1.2} easing="easeOut" trigger="view" replayOnHover className="count-up-text" />
+                ) : (
+                  "--"
+                )}
                 {trend.length > 1 && (
                   <span
                     className={`text-base font-sans font-normal ml-2 ${
@@ -326,7 +332,7 @@ export default function ArchivePage() {
             <div className="bg-card border border-line rounded-2xl p-6">
               <p className="text-xs text-muted tracking-widest mb-2">漏洞闭环率</p>
               <p className="font-serif font-bold text-4xl text-pine">
-                {Math.round(stats.rate * 100)}
+                <CountUp from={0} to={Math.round(stats.rate * 100)} duration={1.2} easing="easeOut" trigger="view" replayOnHover className="count-up-text" />
                 <span className="text-base text-muted font-sans font-normal"> %</span>
               </p>
               <p className="text-xs text-muted mt-1">
@@ -455,11 +461,20 @@ export default function ArchivePage() {
               </svg>
             </button>
             <div className="p-6 sm:p-8">
-              <p className="text-xs text-muted tracking-widest">BP 原文 · {new Date(bpSession.created_at).toLocaleString("zh-CN")}</p>
+              <p className="text-xs text-muted tracking-widest">
+                BP 原文 · {new Date(bpSession.created_at).toLocaleString("zh-CN")}
+                {looksLikeMarkdown(bpSession.bp_text) && <span className="ml-2 text-copper">Markdown</span>}
+              </p>
               <h2 className="font-serif font-bold text-xl mt-1 mb-4">
                 {bpSession.team_name} · {COMPETITIONS[bpSession.competition]?.name}
               </h2>
-              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words border-t border-line pt-4">{bpSession.bp_text}</p>
+              {looksLikeMarkdown(bpSession.bp_text) ? (
+                <div className="border-t border-line pt-4">
+                  <Markdown text={bpSession.bp_text} />
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words border-t border-line pt-4">{bpSession.bp_text}</p>
+              )}
               <p className="text-xs text-muted mt-5">共 {bpSession.bp_text.length} 字 · 仅存于本机浏览器</p>
             </div>
           </div>

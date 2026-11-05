@@ -1,5 +1,6 @@
 // 五维评分条（雷达图的低代码替代呈现，技术方案 §6 P2 说明）
 
+import CountUp from "@/components/bits/CountUp";
 import type { DimensionScore } from "@/lib/types";
 
 export function ScoreBars({ dims }: { dims: DimensionScore[] }) {
@@ -31,11 +32,11 @@ export function ScoreBars({ dims }: { dims: DimensionScore[] }) {
 }
 
 export function ScoreRing({ score, label }: { score: number; label?: string }) {
-  // 大数字呈现综合分（0-100）
+  // 大数字呈现综合分（0-100），进场滚动计数
   return (
     <div className="text-center">
       <div className="font-serif font-bold text-6xl leading-none text-pine">
-        {score}
+        <CountUp from={0} to={score} duration={1.4} easing="easeOut" trigger="view" replayOnHover className="count-up-text" />
         <span className="text-2xl text-muted font-sans font-normal">分</span>
       </div>
       {label && <div className="text-xs text-muted mt-2 tracking-widest">{label}</div>}

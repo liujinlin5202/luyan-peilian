@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AIBadge, MockBanner } from "@/components/ui";
 import { ThinkingStatus } from "@/components/thinking-status";
+import CountUp from "@/components/bits/CountUp";
 import { RadarChart, ScoreBars } from "@/components/scores";
 import { demoTokenHeaders } from "@/lib/demo-token";
 import { COMPETITIONS } from "@/lib/knowledge";
@@ -316,13 +317,17 @@ export default function ReviewPage() {
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
             {prevScore != null && (
               <div className="text-center opacity-60">
-                <span className="font-serif text-4xl font-bold">{prevScore}</span>
+                <span className="font-serif text-4xl font-bold">
+                  <CountUp from={0} to={prevScore} duration={1.2} easing="easeOut" trigger="view" className="count-up-text" />
+                </span>
                 <p className="text-xs text-muted mt-1">上一场</p>
               </div>
             )}
             {prevScore != null && <span className="font-serif text-2xl text-muted pb-5">→</span>}
             <div className="text-center">
-              <span className="font-serif text-6xl font-bold text-pine">{total}</span>
+              <span className="font-serif text-6xl font-bold text-pine">
+                <CountUp from={0} to={total} duration={1.4} easing="easeOut" trigger="view" replayOnHover className="count-up-text" />
+              </span>
               <p className="text-xs text-muted mt-1">本场 · 满分 {maxTotal}</p>
             </div>
             {delta != null && (
