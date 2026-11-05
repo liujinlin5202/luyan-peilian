@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ThoughtLine, { type ThoughtLineProps } from "@/components/ThoughtLine";
+import ThoughtLine, { type ThoughtLineProps } from "@/components/bits/ThoughtLine";
 
 const EMPTY_STEPS: string[] = [];
 

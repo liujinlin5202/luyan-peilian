@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FoldText } from "@/components/fold-text";
-import StarBorder from "@/components/StarBorder";
-import WebThreads from "@/components/WebThreads";
+import StarBorder from "@/components/bits/StarBorder";
+import WebThreads from "@/components/bits/WebThreads";
 import { useDialog } from "@/lib/use-dialog";
 import "./fold-text.css";
 

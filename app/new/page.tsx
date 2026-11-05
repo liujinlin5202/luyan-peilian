@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import Stepper, { Step } from "@/components/Stepper";
+import Stepper, { Step } from "@/components/bits/Stepper";
 import { ThinkingStatus } from "@/components/thinking-status";
 import mammoth from "mammoth";
 import { demoTokenHeaders } from "@/lib/demo-token";

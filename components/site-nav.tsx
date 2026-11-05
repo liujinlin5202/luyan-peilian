@@ -2,7 +2,7 @@
 
 /* 全站主导航：橡皮分段按钮（RubberSegment），按当前路由高亮，滑块可拖动 */
 import { usePathname, useRouter } from "next/navigation";
-import RubberSegment from "@/components/RubberSegment";
+import RubberSegment from "@/components/bits/RubberSegment";
 
 const ITEMS = [
   { value: "/new", label: "新建训练" },

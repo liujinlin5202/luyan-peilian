@@ -4,7 +4,8 @@ import nextTs from "eslint-config-next/typescript";
 
 const config = [
   {
-    ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts"],
+    // components/bits 为第三方移植组件（原样 vendored），不套用本项目 lint 规则
+    ignores: ["node_modules/**", ".next/**", "out/**", "build/**", "next-env.d.ts", "components/bits/**"],
   },
   ...coreWebVitals,
   ...nextTs,

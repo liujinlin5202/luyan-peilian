@@ -78,7 +78,7 @@ bash deploy.sh
 | --- | --- |
 | [docs/技术实现文档.md](docs/技术实现文档.md) | 架构、数据模型、三个 AI Agent 的提示词设计与 Sanitize、API 契约、部署运维（v1.1） |
 | [docs/supabase-数据系统方案.md](docs/supabase-数据系统方案.md) | 云端数据系统：建表 SQL、RLS 策略、本地→云端迁移 |
-| [部署指南.md](部署指南.md) | 服务器手动部署步骤与安全组配置 |
+| [部署指南.md](docs/部署指南.md) | 服务器手动部署步骤与安全组配置 |
 
 ## 项目结构（速览）
 
